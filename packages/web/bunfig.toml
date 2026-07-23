@@ -1,0 +1,12 @@
+[test]
+coveragePathIgnorePatterns = [
+  "bin/main.ts",
+  "**/bin/runtime.ts",
+  "../application/**",
+  "../domain/**",
+  "../event-sourcing/**",
+  "../test-support/**",
+  "**/src/server.ts",
+]
+coverageSkipTestFiles = true
+coverageThreshold = 1.0

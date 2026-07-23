@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "@es-ts-example/web"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "bin/**/*.ts", "test/**/*.ts"]
+}

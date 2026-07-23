@@ -1,0 +1,17 @@
+{
+  "$schema": "../../node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "bun",
+  "plugins": ["@hughescr/stryker-bun-runner"],
+  "mutate": ["src/**/*.ts"],
+  "coverageAnalysis": "perTest",
+  "reporters": ["clear-text", "progress", "json"],
+  "thresholds": {
+    "high": 100,
+    "low": 100,
+    "break": 100
+  },
+  "bun": {
+    "testFiles": ["./test/unit/counter.test.ts", "./test/unit/index.test.ts"],
+    "timeout": 30000
+  }
+}

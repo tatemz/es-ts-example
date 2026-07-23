@@ -1,0 +1,4 @@
+[test]
+coveragePathIgnorePatterns = ["../event-sourcing/**", "../test-support/**"]
+coverageSkipTestFiles = true
+coverageThreshold = 1.0

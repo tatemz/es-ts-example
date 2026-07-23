@@ -1,0 +1,15 @@
+export const counterMessages = {
+  "web.document.description": "Event-sourced counters rebuilt from their event streams.",
+  "counter.documentTitle": "Counters",
+  "counter.heading": "Counters",
+  "counter.intro": "Each counter is rebuilt by replaying its stored events.",
+  "counter.create.field.label": "New counter id",
+  "counter.create.field.placeholder": "counter-1",
+  "counter.create.submit": "Create counter",
+  "counter.list.empty": "No counters yet. Create one to start an event stream.",
+  "counter.action.increment": "Increment",
+  "counter.action.decrement": "Decrement",
+  "counter.action.disable": "Disable",
+  "counter.error.missingId": "Enter a counter id before creating a counter.",
+  "counter.error.commandFailed": "That counter command could not be applied.",
+} as const;

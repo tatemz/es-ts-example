@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "packages": {
+    "@es-ts-example/application": {
+      "wallTimeMs": 300000,
+      "mutantCount": 1200,
+      "timeouts": 50,
+      "errors": 200,
+      "survived": 0,
+      "noCoverage": 0,
+      "rationale": "Counter-only application POC baseline; generous ceilings, zero survived/no-coverage enforced by report health."
+    },
+    "@es-ts-example/cli": {
+      "wallTimeMs": 120000,
+      "mutantCount": 400,
+      "timeouts": 50,
+      "errors": 200,
+      "survived": 0,
+      "noCoverage": 0,
+      "rationale": "Counter CLI view POC baseline."
+    },
+    "@es-ts-example/domain": {
+      "wallTimeMs": 180000,
+      "mutantCount": 800,
+      "timeouts": 50,
+      "errors": 200,
+      "survived": 0,
+      "noCoverage": 0,
+      "rationale": "Counter-only domain POC baseline."
+    },
+    "@es-ts-example/event-sourcing": {
+      "wallTimeMs": 120000,
+      "mutantCount": 400,
+      "timeouts": 50,
+      "errors": 200,
+      "survived": 0,
+      "noCoverage": 0,
+      "rationale": "Event-sourcing primitives POC baseline."
+    },
+    "@es-ts-example/test-support": {
+      "wallTimeMs": 60000,
+      "mutantCount": 300,
+      "timeouts": 50,
+      "errors": 200,
+      "survived": 0,
+      "noCoverage": 0,
+      "rationale": "Shared test-support POC baseline."
+    },
+    "@es-ts-example/web": {
+      "wallTimeMs": 600000,
+      "mutantCount": 1500,
+      "timeouts": 80,
+      "errors": 300,
+      "survived": 0,
+      "noCoverage": 0,
+      "rationale": "Counter web view POC baseline."
+    }
+  }
+}

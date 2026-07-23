@@ -1,0 +1,4 @@
+[test]
+coveragePathIgnorePatterns = ["bin/main.ts"]
+coverageSkipTestFiles = true
+coverageThreshold = 1.0

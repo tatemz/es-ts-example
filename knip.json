@@ -1,0 +1,51 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "rules": {
+    "binaries": "off",
+    "dependencies": "off",
+    "devDependencies": "off",
+    "duplicates": "off",
+    "unlisted": "off"
+  },
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.ts"],
+      "project": ["scripts/**/*.ts", "test/**/*.ts"]
+    },
+    "packages/application": {
+      "entry": ["src/*/index.ts", "test/unit/**/*.test.ts", "test/e2e/**/*.steps.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "packages/cli": {
+      "entry": ["bin/main.ts", "test/unit/**/*.test.ts", "test/property/**/*.property.test.ts"],
+      "project": ["src/**/*.ts", "bin/**/*.ts", "test/**/*.ts"]
+    },
+    "packages/domain": {
+      "entry": ["test/unit/**/*.test.ts", "test/e2e/**/*.steps.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "packages/event-sourcing": {
+      "entry": [
+        "src/*.ts",
+        "test/unit/**/*.test.ts",
+        "test/property/**/*.property.test.ts",
+        "test/e2e/**/*.steps.ts",
+        "test/e2e/support/**/*.ts"
+      ],
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "packages/test-support": {
+      "entry": ["src/*.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/web": {
+      "entry": [
+        "bin/main.ts",
+        "test/unit/**/*.test.ts",
+        "test/property/**/*.property.test.ts",
+        "test/e2e/**/*.ts"
+      ],
+      "project": ["src/**/*.ts", "src/**/*.tsx", "bin/**/*.ts", "test/**/*.ts"]
+    }
+  }
+}

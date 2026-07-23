@@ -1,0 +1,34 @@
+{
+  "$schema": "../../node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "bun",
+  "plugins": ["@hughescr/stryker-bun-runner"],
+  "mutate": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "!src/index.ts",
+    "!src/mvc/jsx-runtime.ts",
+    "!src/rpcClients.ts",
+    "!src/server.ts",
+    "!src/i18n/**/*.ts"
+  ],
+  "coverageAnalysis": "perTest",
+  "concurrency": 2,
+  "reporters": ["clear-text", "progress", "json"],
+  "thresholds": {
+    "high": 100,
+    "low": 100,
+    "break": 100
+  },
+  "bun": {
+    "testFiles": [
+      "./test/unit/counter/controllers.test.ts",
+      "./test/unit/counter/models.test.ts",
+      "./test/unit/counter/views.test.ts",
+      "./test/unit/html.test.ts",
+      "./test/unit/i18n.test.ts",
+      "./test/unit/index.test.ts",
+      "./test/unit/web-infrastructure.test.ts"
+    ],
+    "timeout": 30000
+  }
+}

@@ -1,0 +1,14 @@
+node_modules
+bun.lockb
+coverage
+dist
+**/reports/mutation
+reports/duplication
+.stryker-tmp
+.tmp/
+.DS_Store
+.env
+.counter-events.json
+.mutation-timing.json
+.cursor/mcp.json
+packages/web/public/client.css

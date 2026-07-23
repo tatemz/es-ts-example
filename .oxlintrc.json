@@ -1,0 +1,198 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "oxc", "import", "unicorn"],
+  "options": {
+    "typeAware": true
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "off",
+    "style": "off",
+    "restriction": "off",
+    "perf": "off"
+  },
+  "env": {
+    "builtin": true
+  },
+  "settings": {
+    "jsx-a11y": {
+      "attributes": {
+        "for": ["htmlFor", "for"]
+      }
+    }
+  },
+  "ignorePatterns": [
+    ".tmp/**",
+    "**/coverage/**",
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/public/**",
+    "**/reports/**",
+    "**/.stryker-tmp/**",
+    "oxlint-plugins/**"
+  ],
+  "jsPlugins": ["./oxlint-plugins/es-ts-example/index.mjs"],
+  "rules": {
+    "complexity": ["error", { "max": 4 }],
+    "eqeqeq": "error",
+    "import/no-duplicates": "error",
+    "import/no-self-import": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "typescript/consistent-type-exports": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/no-base-to-string": "off",
+    "typescript/no-duplicate-type-constituents": "off",
+    "typescript/no-explicit-any": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/no-misused-spread": "off",
+    "typescript/switch-exhaustiveness-check": "error",
+    "unicorn/no-useless-fallback-in-spread": "off",
+    "unicorn/prefer-string-starts-ends-with": "off",
+    "unicorn/prefer-node-protocol": "error",
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "fs",
+            "message": "Use effect/FileSystem instead of Node fs."
+          },
+          {
+            "name": "fs/promises",
+            "message": "Use effect/FileSystem instead of Node fs."
+          },
+          {
+            "name": "node:fs",
+            "message": "Use effect/FileSystem instead of Node fs."
+          },
+          {
+            "name": "node:fs/promises",
+            "message": "Use effect/FileSystem instead of Node fs."
+          }
+        ]
+      }
+    ],
+    "no-warning-comments": [
+      "error",
+      {
+        "terms": ["stryker"],
+        "location": "anywhere"
+      }
+    ],
+    "es-ts-example/mvc-factory-owns-one-renderable-factory": "error",
+    "es-ts-example/mvc-factory-user-facing-strings-use-i18n": "error",
+    "es-ts-example/mvc-file-placement": "error",
+    "es-ts-example/mvc-classes-stay-in-views": "error",
+    "es-ts-example/mvc-controller-no-model-factories": "error",
+    "es-ts-example/mvc-controller-owns-one-controller": "error",
+    "es-ts-example/mvc-model-no-boolean-state": "error",
+    "es-ts-example/mvc-model-owns-one-renderable-model": "error",
+    "es-ts-example/mvc-model-requires-factory": "error",
+    "es-ts-example/mvc-model-requires-view": "error",
+    "es-ts-example/mvc-renderable-variants-use-tags": "error",
+    "es-ts-example/mvc-view-no-cardinality-decisions": "error",
+    "es-ts-example/mvc-view-owns-one-renderable-view": "error",
+    "es-ts-example/mvc-view-prefers-model-parameter": "error",
+    "es-ts-example/mvc-view-requires-model-sibling": "error",
+    "es-ts-example/effect-boundaries": "error",
+    "es-ts-example/effect-first-code": "error",
+    "es-ts-example/effect-trypromise-requires-catch": "error",
+    "es-ts-example/i18n-message-catalogs": "error",
+    "es-ts-example/import-runtime-boundaries": "error",
+    "es-ts-example/literal-union-ownership": "error",
+    "es-ts-example/no-fallible-module-scope-make": "error",
+    "es-ts-example/no-lowercase-effect-order": "error",
+    "es-ts-example/no-native-standard-library": "error",
+    "es-ts-example/no-option-returning-filter-map": "error",
+    "es-ts-example/public-entrypoint-policy": "error",
+    "es-ts-example/rendered-dom-contract": "error",
+    "es-ts-example/repo-path-policy": "error",
+    "es-ts-example/strong-types": "error",
+    "es-ts-example/test-assertion-boundaries": "error",
+    "es-ts-example/test-assertion-quality": "error",
+    "es-ts-example/deterministic-control-flow": "error",
+    "es-ts-example/mvc-ui-architecture": "error",
+    "es-ts-example/test-discipline": "error",
+    "es-ts-example/test-fixture-boundaries": "error",
+    "es-ts-example/unit-test-architecture": "error",
+    "es-ts-example/view-filenaming-convention": "error",
+    "es-ts-example/web-ui-component-contracts": "error",
+    "es-ts-example/web-view-model-strings": "error"
+  },
+  "overrides": [
+    {
+      "files": ["scripts/**"],
+      "rules": {
+        "typescript/no-misused-promises": "off",
+        "typescript/switch-exhaustiveness-check": "off"
+      }
+    },
+    {
+      "files": ["packages/web/src/**/*.view.tsx"],
+      "plugins": ["eslint", "typescript", "oxc", "import", "unicorn", "jsx-a11y"],
+      "rules": {
+        "jsx-a11y/alt-text": "error",
+        "jsx-a11y/aria-props": "error",
+        "jsx-a11y/click-events-have-key-events": "error",
+        "jsx-a11y/label-has-associated-control": "error",
+        "jsx-a11y/role-has-required-aria-props": "error",
+        "jsx-a11y/role-supports-aria-props": "error"
+      }
+    },
+    {
+      "files": ["packages/**/test/**", "test/**"],
+      "rules": {
+        "typescript/no-explicit-any": "off",
+        "typescript/no-misused-promises": "off",
+        "typescript/switch-exhaustiveness-check": "off",
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "fs",
+                "message": "Use effect/FileSystem instead of Node fs."
+              },
+              {
+                "name": "fs/promises",
+                "message": "Use effect/FileSystem instead of Node fs."
+              },
+              {
+                "name": "node:fs",
+                "message": "Use effect/FileSystem instead of Node fs."
+              },
+              {
+                "name": "node:fs/promises",
+                "message": "Use effect/FileSystem instead of Node fs."
+              },
+              {
+                "name": "assert",
+                "message": "Raw asserts belong in test support modules. Call an intent-named helper from the nearest test support Assertions module."
+              },
+              {
+                "name": "assert/strict",
+                "message": "Raw asserts belong in test support modules. Call an intent-named helper from the nearest test support Assertions module."
+              },
+              {
+                "name": "node:assert",
+                "message": "Raw asserts belong in test support modules. Call an intent-named helper from the nearest test support Assertions module."
+              },
+              {
+                "name": "node:assert/strict",
+                "message": "Raw asserts belong in test support modules. Call an intent-named helper from the nearest test support Assertions module."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/**/test/**/support/**"],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ]
+}

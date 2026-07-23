@@ -1,0 +1,21 @@
+{
+  "mode": "mild",
+  "minLines": 12,
+  "minTokens": 80,
+  "path": ["packages", "scripts"],
+  "format": ["typescript", "tsx"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/.stryker-tmp/**",
+    "**/coverage/**",
+    "**/reports/**",
+    "**/public/**",
+    "**/*.d.ts",
+    "packages/*/test/e2e/steps/**/*.ts",
+    "packages/web/src/**/*.view.tsx",
+    "packages/web/src/**/*.factory.ts"
+  ],
+  "reporters": ["console", "json", "html"],
+  "output": "reports/duplication",
+  "threshold": 100
+}

@@ -1,0 +1,40 @@
+{
+  "name": "@es-ts-example/application",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "bun run build:types",
+    "build:types": "tsc --noEmit",
+    "check": "bun run build && bun run lint && bun run format:check && bun run test && bun run test:property && bun run e2e && bun run mutation",
+    "typecheck": "bun run lint:types",
+    "format": "bun run format:write",
+    "format:check": "oxfmt --check .",
+    "format:write": "oxfmt --write .",
+    "lint": "bun run lint:oxlint && bun run lint:types",
+    "lint:oxlint": "oxlint .",
+    "lint:types": "tsc --noEmit",
+    "test": "bun run test:unit",
+    "test:coverage": "bun run test:unit",
+    "test:property": "bun test ./test/property",
+    "test:unit": "bun test --coverage ./test/unit",
+    "e2e": "bunx --bun effect-bdd --features \"../../features/product/counter/counter.feature\" --steps \"test/e2e/**/*.steps.ts\" --reporter text --strict",
+    "acceptance": "bun run e2e",
+    "mutation": "stryker run",
+    "mutation:dev": "stryker run --incremental --incrementalFile reports/mutation/stryker-incremental.json",
+    "precommit": "bun run check",
+    "start": "bun run bin/main.ts"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "catalog:",
+    "@es-ts-example/domain": "workspace:*",
+    "@es-ts-example/event-sourcing": "workspace:*",
+    "@es-ts-example/test-support": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "effect-bdd": "catalog:"
+  }
+}
