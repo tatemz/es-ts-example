@@ -20,7 +20,7 @@
     "test:coverage": "bun run test:unit",
     "test:property": "bun test ./test/property",
     "test:unit": "bun test --coverage ./test/unit",
-    "e2e": "bunx --bun effect-bdd --features \"../../features/product/counter/counter.feature\" --steps \"test/e2e/**/*.steps.ts\" --reporter text --strict",
+    "e2e": "bunx --bun effect-bdd --features \"../../features/product/**/*.feature\" --steps \"test/e2e/**/*.steps.ts\" --reporter text --strict",
     "acceptance": "bun run e2e",
     "mutation": "stryker run",
     "mutation:dev": "stryker run --incremental --incrementalFile reports/mutation/stryker-incremental.json",

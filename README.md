@@ -287,8 +287,9 @@ return accept(
 This code does not use a database, HTTP request, or UI type. It is a pure
 business decision.
 
-See `features/product/counter/counter.feature` for examples written as product
-behavior.
+See `features/product` for the same rules written as product behavior:
+`counter/counter.feature` for the bounded counter and `user/bookmarks.feature`
+for article bookmarks.
 
 ## Request flow
 

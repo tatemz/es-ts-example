@@ -12,8 +12,7 @@ current state is always rebuilt by replaying events.
 A shared Effect application core exposes commands and queries over in-process
 RPC. Two views consume the same RPC client tags: a CLI (`packages/cli`) and a
 server-rendered web MVC (`packages/web`). Views never touch the domain or store
-directly. The behavior contract lives in
-`features/product/counter/counter.feature`.
+directly. The behavior contract lives in `features/product`.
 
 ## Operating Principles
 

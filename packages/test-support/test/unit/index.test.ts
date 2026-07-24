@@ -198,117 +198,22 @@ test("greeterName arbitrary respects the configured length bounds", () => {
 });
 
 test("BDD assertions accept matching expected values", () => {
-  const accepted = Result.succeed("accepted");
-  const draft = { title: "River Walk", manualCheckPrompts: ["Find the mural"] };
-  const partySize = { min: 2, max: 4 };
-  const party = { title: "River Walk", revisionNumber: 3 };
-  const adventurers = [{ adventurer: "Ari" }];
-
-  BddAssertions.assertDecisionAccepted(accepted);
-  BddAssertions.assertRegisteredAccountState({ handle: "ari" }, { handle: "ari" });
-  BddAssertions.assertRegistrationOutcome("accepted", "accepted");
-  BddAssertions.assertCompletedBlockIds(["block-1"], ["block-1"]);
-  BddAssertions.assertAnswerCorrectness(true, true);
-  BddAssertions.assertNoPublishedRevisions([]);
-  BddAssertions.assertAdventureStartedFromRevision(accepted, 3, 3);
-  BddAssertions.assertRevisionUnavailable(2, 2);
-  BddAssertions.assertAcceptedDraft(accepted, draft, draft);
-  BddAssertions.assertRevisionExample(
-    { title: "River Walk", block: "Find the mural" },
-    { title: "River Walk", block: "Find the mural" },
-  );
-  BddAssertions.assertBlockFound(true, "block should exist");
-  BddAssertions.assertSingleAnswerWithoutOptions({
-    mode: "SingleCorrectAnswer",
-    options: [],
-  });
   BddAssertions.assertCounterValue(7, 7);
   BddAssertions.assertCounterIsActive(true);
-  BddAssertions.assertPartySizeLimits(partySize, partySize);
-  BddAssertions.assertPublishedAdventurePartySize(
-    { title: "River Walk", partySizeLimits: partySize },
-    { title: "River Walk", partySizeLimits: partySize },
-  );
-  BddAssertions.assertPartyPreparing(party, party);
-  BddAssertions.assertAdventurerRows(adventurers, adventurers);
-  BddAssertions.assertBlockRows(["Find the mural"], ["Find the mural"]);
-  BddAssertions.assertOptionRows(["North"], ["North"]);
-  BddAssertions.assertStringRows(["River Walk"], ["River Walk"]);
-  BddAssertions.assertStringValue("River Walk", "River Walk");
-  BddAssertions.assertBooleanValue(true, true);
+  BddAssertions.assertBookmarkedArticles(["small-batches"], ["small-batches"]);
+  BddAssertions.assertListedArticles(["small-batches"], ["small-batches"]);
 });
 
 test("BDD assertions reject mismatched values", () => {
-  const accepted = Result.succeed("accepted");
-  const rejected = Result.fail("rejected");
-  const draft = { title: "River Walk", manualCheckPrompts: ["Find the mural"] };
-  const partySize = { min: 2, max: 4 };
-  const party = { title: "River Walk", revisionNumber: 3 };
-  const adventurers = [{ adventurer: "Ari" }];
   const strictEqualMessage = "Expected values to be strictly equal";
   const deepEqualMessage = "Expected values to be strictly deep-equal";
 
-  expect(() => BddAssertions.assertDecisionAccepted(rejected)).toThrow(strictEqualMessage);
-  expect(() =>
-    BddAssertions.assertRegisteredAccountState({ handle: "ari" }, { handle: "lee" }),
-  ).toThrow(deepEqualMessage);
-  expect(() => BddAssertions.assertRegistrationOutcome("accepted", "rejected")).toThrow(
-    strictEqualMessage,
-  );
-  expect(() => BddAssertions.assertCompletedBlockIds(["block-1"], ["block-2"])).toThrow(
-    deepEqualMessage,
-  );
-  expect(() => BddAssertions.assertAnswerCorrectness(false, true)).toThrow(strictEqualMessage);
-  expect(() => BddAssertions.assertNoPublishedRevisions(["revision"])).toThrow(strictEqualMessage);
-  expect(() => BddAssertions.assertAdventureStartedFromRevision(accepted, 3, 4)).toThrow(
-    strictEqualMessage,
-  );
-  expect(() => BddAssertions.assertRevisionUnavailable(2, 3)).toThrow(strictEqualMessage);
-  expect(() =>
-    BddAssertions.assertAcceptedDraft(accepted, draft, {
-      title: "River Walk",
-      manualCheckPrompts: ["Find the blue door"],
-    }),
-  ).toThrow(deepEqualMessage);
-  expect(() =>
-    BddAssertions.assertRevisionExample(
-      { title: "River Walk", block: undefined },
-      { title: "River Walk", block: "Find the mural" },
-    ),
-  ).toThrow(deepEqualMessage);
-  expect(() => BddAssertions.assertBlockFound(false, "missing block")).toThrow("missing block");
-  expect(() =>
-    BddAssertions.assertSingleAnswerWithoutOptions({
-      mode: "MultipleChoice",
-      options: [],
-    }),
-  ).toThrow(strictEqualMessage);
   expect(() => BddAssertions.assertCounterValue(7, 8)).toThrow(strictEqualMessage);
   expect(() => BddAssertions.assertCounterIsActive(false)).toThrow(strictEqualMessage);
-  expect(() => BddAssertions.assertPartySizeLimits(undefined, partySize)).toThrow(deepEqualMessage);
-  expect(() =>
-    BddAssertions.assertPublishedAdventurePartySize(
-      { title: "River Walk", partySizeLimits: partySize },
-      { title: "Creek Walk", partySizeLimits: partySize },
-    ),
-  ).toThrow(deepEqualMessage);
-  expect(() =>
-    BddAssertions.assertPartyPreparing(party, { title: "River Walk", revisionNumber: 4 }),
-  ).toThrow(deepEqualMessage);
-  expect(() => BddAssertions.assertAdventurerRows(adventurers, [{ adventurer: "Bo" }])).toThrow(
+  expect(() => BddAssertions.assertBookmarkedArticles([], ["small-batches"])).toThrow(
     deepEqualMessage,
   );
-  expect(() => BddAssertions.assertBlockRows(["Find the mural"], ["Find the door"])).toThrow(
-    deepEqualMessage,
-  );
-  expect(() => BddAssertions.assertOptionRows(["North"], ["South"])).toThrow(deepEqualMessage);
-  expect(() => BddAssertions.assertStringRows(["River Walk"], ["Creek Walk"])).toThrow(
-    deepEqualMessage,
-  );
-  expect(() => BddAssertions.assertStringValue("River Walk", "Creek Walk")).toThrow(
-    strictEqualMessage,
-  );
-  expect(() => BddAssertions.assertBooleanValue(true, false)).toThrow(strictEqualMessage);
+  expect(() => BddAssertions.assertListedArticles(["small-batches"], [])).toThrow(deepEqualMessage);
 });
 
 test("property test parameters keep strict interrupt settings", () => {

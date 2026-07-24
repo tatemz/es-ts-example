@@ -90,6 +90,11 @@ when a projection is.
 ## Tests
 
 Unit tests cover handlers and read models, property tests cover invariants that
-must hold across generated event logs, and the product BDD feature in
-`features/product/counter/counter.feature` is exercised by the step definitions
-under `test/e2e/steps`.
+must hold across generated event logs, and every product feature under
+`features/product` is exercised by the step definitions in `test/e2e/steps`.
+
+The counter feature also runs against the domain package, so its steps state
+what a decision does. The bookmark feature runs here only: a bookmark toggle
+never rejects, so the behavior worth pinning is the one this layer owns, where
+commands land in the store and `ListArticles` folds them back against the
+article catalog.
