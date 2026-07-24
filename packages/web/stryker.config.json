@@ -21,6 +21,8 @@
   },
   "bun": {
     "testFiles": [
+      "./test/unit/articles/controllers.test.ts",
+      "./test/unit/articles/views.test.ts",
       "./test/unit/counter/controllers.test.ts",
       "./test/unit/counter/models.test.ts",
       "./test/unit/counter/views.test.ts",

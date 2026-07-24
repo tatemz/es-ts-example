@@ -6,15 +6,25 @@ import * as Arr from "effect/Array";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
+import { getArticlesPageController } from "../../src/controllers/getArticlesPage.controller.ts";
 import { getCounterPageController } from "../../src/controllers/getCounterPage.controller.ts";
 import { postCounterCommandController } from "../../src/controllers/postCounterCommand.controller.ts";
 import { postCreateCounterController } from "../../src/controllers/postCreateCounter.controller.ts";
-import { CommandRpcClient, QueryRpcClient } from "../../src/rpcClients.ts";
+import { postToggleBookmarkController } from "../../src/controllers/postToggleBookmark.controller.ts";
+import {
+  ArticleQueryRpcClient,
+  BookmarkCommandRpcClient,
+  CommandRpcClient,
+  QueryRpcClient,
+} from "../../src/rpcClients.ts";
 
 const clients = (path: string) =>
-  Layer.mergeAll(CommandRpcClient.local, QueryRpcClient.local).pipe(
-    Layer.provide(Application.DomainEventStore.jsonFile(path)),
-  );
+  Layer.mergeAll(
+    CommandRpcClient.local,
+    QueryRpcClient.local,
+    BookmarkCommandRpcClient.local,
+    ArticleQueryRpcClient.local,
+  ).pipe(Layer.provide(Application.DomainEventStore.jsonFile(path)));
 
 const path = `/tmp/es-web-e2e-${process.pid}.json`;
 
@@ -41,4 +51,30 @@ testEffect("counter commands persist a replayable json event log across web requ
       storedCreated: true,
     });
   }).pipe(Effect.provide(clients(path)), Effect.provide(BunServices.layer)),
+);
+
+testEffect("bookmark actions persist projected article state across web requests", () =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const bookmarkPath = `/tmp/es-web-bookmark-e2e-${process.pid}.json`;
+    yield* Effect.ignore(fs.remove(bookmarkPath));
+
+    yield* postToggleBookmarkController({ articleId: "events-over-state" });
+    const page = yield* getArticlesPageController({});
+    const contents = yield* fs.readFileString(bookmarkPath);
+    yield* Effect.ignore(fs.remove(bookmarkPath));
+
+    const firstRow = page.list._tag === "ArticleListPopulated" ? page.list.rows[0] : undefined;
+
+    expect({
+      bookmark: firstRow?.bookmark._tag,
+      storedBookmarked: contents.includes("ArticleBookmarked"),
+    }).toEqual({
+      bookmark: "ArticleSaved",
+      storedBookmarked: true,
+    });
+  }).pipe(
+    Effect.provide(clients(`/tmp/es-web-bookmark-e2e-${process.pid}.json`)),
+    Effect.provide(BunServices.layer),
+  ),
 );

@@ -9,17 +9,28 @@ import {
   jsxDEV,
   jsxs as devJsxs,
 } from "../../src/mvc/jsx-dev-runtime.ts";
-import { counterHomeHref, webActions, webRoutes } from "../../src/routes.ts";
+import { articlesHref, counterHomeHref, webActions, webRoutes } from "../../src/routes.ts";
 import { parseStorageBackend } from "../../src/runtime-config.ts";
 import { postFormEncodingAttributes } from "../../src/views/es-ts-exampleView.support.ts";
 
 test("web routes and actions expose the counter surface", () => {
   expect({ webRoutes, webActions }).toEqual({
-    webRoutes: { clientStylesheet: "/client.css", home: "/" },
+    webRoutes: { articles: "/articles", clientStylesheet: "/client.css", home: "/" },
     webActions: {
       createCounter: "/actions/counter/create",
       runCounterCommand: "/actions/counter/command",
+      toggleBookmark: "/actions/articles/toggle-bookmark",
     },
+  });
+});
+
+test("articlesHref appends only a provided, url-encoded error", () => {
+  expect({
+    empty: articlesHref({}),
+    error: articlesHref({ error: "bad command" }),
+  }).toEqual({
+    empty: "/articles",
+    error: "/articles?error=bad%20command",
   });
 });
 

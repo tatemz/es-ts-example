@@ -2,6 +2,7 @@ import * as Arr from "effect/Array";
 import * as Fn from "effect/Function";
 
 export const webRoutes = {
+  articles: "/articles",
   clientStylesheet: "/client.css",
   home: "/",
 } as const;
@@ -9,6 +10,7 @@ export const webRoutes = {
 export const webActions = {
   createCounter: "/actions/counter/create",
   runCounterCommand: "/actions/counter/command",
+  toggleBookmark: "/actions/articles/toggle-bookmark",
 } as const;
 
 type CounterHomeHrefInput = {
@@ -28,4 +30,15 @@ export const counterHomeHref = (input: CounterHomeHrefInput): string => {
   return Arr.isReadonlyArrayEmpty(parameters)
     ? webRoutes.home
     : `${webRoutes.home}?${Fn.pipe(parameters, Arr.join("&"))}`;
+};
+
+type ArticlesHrefInput = {
+  readonly error?: string;
+};
+
+export const articlesHref = (input: ArticlesHrefInput): string => {
+  const error = input.error;
+  return error === undefined
+    ? webRoutes.articles
+    : `${webRoutes.articles}?error=${encodeURIComponent(error)}`;
 };

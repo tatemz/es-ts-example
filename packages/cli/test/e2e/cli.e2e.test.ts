@@ -25,3 +25,25 @@ testEffect("counters persist across separate cli invocations sharing one event l
     ]);
   }).pipe(Effect.provide(BunServices.layer)),
 );
+
+testEffect("bookmarks persist across separate cli invocations sharing one event log", () =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = `/tmp/es-cli-bookmark-e2e-${process.pid}.json`;
+    yield* Effect.ignore(fs.remove(path));
+
+    yield* runCli(["bookmark", "user-1", "events-over-state"], path);
+    const listed = yield* runCli(["articles", "user-1"], path);
+    const contents = yield* fs.readFileString(path);
+
+    yield* Effect.ignore(fs.remove(path));
+
+    expect({
+      firstArticle: listed[1],
+      storedBookmarked: contents.includes("ArticleBookmarked"),
+    }).toEqual({
+      firstArticle: '#events-over-state "Events Over State" [bookmarked]',
+      storedBookmarked: true,
+    });
+  }).pipe(Effect.provide(BunServices.layer)),
+);

@@ -11,7 +11,11 @@
     "break": 100
   },
   "bun": {
-    "testFiles": ["./test/unit/counter.test.ts", "./test/unit/index.test.ts"],
+    "testFiles": [
+      "./test/unit/counter.test.ts",
+      "./test/unit/index.test.ts",
+      "./test/unit/user.test.ts"
+    ],
     "timeout": 30000
   }
 }

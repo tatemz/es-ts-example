@@ -3,7 +3,7 @@ import * as Application from "@es-ts-example/application";
 import { propertyTestParameters } from "@es-ts-example/test-support/PropertyTest";
 import * as Arr from "effect/Array";
 import * as FastCheck from "effect/testing/FastCheck";
-import { parseArguments, renderList } from "../../src/index.ts";
+import { parseArguments, renderArticleList, renderList } from "../../src/index.ts";
 
 const verbPairs = [
   ["create", "Create"],
@@ -48,6 +48,30 @@ test("property: renderList adds exactly one header line to a populated listing",
       const expected = Arr.isReadonlyArrayEmpty(counters) ? 1 : Arr.length(counters) + 1;
       expect(Arr.length(lines)).toBe(expected);
     }),
+    propertyTestParameters,
+  );
+});
+
+test("property: renderArticleList adds exactly one header line to a populated listing", () => {
+  FastCheck.assert(
+    FastCheck.property(
+      FastCheck.array(
+        FastCheck.record({
+          articleId: FastCheck.string({ minLength: 1 }),
+          title: FastCheck.string(),
+          bookmarked: FastCheck.boolean(),
+        }),
+      ),
+      (rawArticles) => {
+        const articles = Arr.map(rawArticles, (article) => ({
+          ...article,
+          articleId: Application.ArticleId.make(article.articleId),
+        }));
+        const lines = renderArticleList({ articles });
+        const expected = Arr.isReadonlyArrayEmpty(articles) ? 1 : Arr.length(articles) + 1;
+        expect(Arr.length(lines)).toBe(expected);
+      },
+    ),
     propertyTestParameters,
   );
 });

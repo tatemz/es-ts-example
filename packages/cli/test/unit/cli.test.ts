@@ -8,6 +8,9 @@ import * as Layer from "effect/Layer";
 import {
   executeAction,
   parseArguments,
+  renderArticle,
+  renderArticleList,
+  renderBookmarkReceipt,
   renderCounter,
   renderList,
   renderReceipt,
@@ -16,10 +19,14 @@ import {
 } from "../../src/index.ts";
 
 const counterId = Application.CounterId.make("c1");
+const userId = Application.UserId.make("user-1");
+const articleId = Application.ArticleId.make("events-over-state");
 
 const inProcessClients = Layer.mergeAll(
   Application.CounterCommandClientLive,
   Application.CounterQueryClientLive,
+  Application.UserCommandClientLive,
+  Application.UserQueryClientLive,
 ).pipe(Layer.provide(Application.DomainEventStore.inMemory));
 
 const sampleCounter: Application.CounterRead = {
@@ -42,6 +49,11 @@ test("parseArguments maps every verb, rejects unknowns, and requires a non-empty
     increment: parseArguments(["increment", "c1"]),
     decrement: parseArguments(["decrement", "c1"]),
     disable: parseArguments(["disable", "c1"]),
+    missingBookmarkUser: parseArguments(["bookmark"]),
+    missingBookmarkArticle: parseArguments(["bookmark", "user-1"]),
+    bookmark: parseArguments(["bookmark", "user-1", "events-over-state"]),
+    missingArticlesUser: parseArguments(["articles"]),
+    articles: parseArguments(["articles", "user-1"]),
   }).toEqual({
     empty: help,
     unknown: help,
@@ -52,6 +64,11 @@ test("parseArguments maps every verb, rejects unknowns, and requires a non-empty
     increment: { _tag: "Command", verb: "Increment", counterId },
     decrement: { _tag: "Command", verb: "Decrement", counterId },
     disable: { _tag: "Command", verb: "Disable", counterId },
+    missingBookmarkUser: help,
+    missingBookmarkArticle: help,
+    bookmark: { _tag: "ToggleBookmark", userId, articleId },
+    missingArticlesUser: help,
+    articles: { _tag: "ListArticles", userId },
   });
 });
 
@@ -66,6 +83,8 @@ test("usage documents every command on its own line", () => {
       "  decrement <counterId>  Subtract one from a counter",
       "  disable <counterId>    Retire a counter",
       "  list                   Show every counter rebuilt from its events",
+      "  bookmark <userId> <articleId>  Toggle an article bookmark",
+      "  articles <userId>              List articles with bookmark state",
     ].join("\n"),
   );
 });
@@ -87,6 +106,30 @@ test("renderList labels populated and empty listings", () => {
   }).toEqual({
     empty: ["No counters yet."],
     populated: ["Counters:", "#c1 value=2 status=active version=3"],
+  });
+});
+
+test("article renderers include projected bookmark status", () => {
+  const article: Application.ArticleRead = {
+    articleId,
+    title: "Events Over State",
+    bookmarked: true,
+  };
+  const receipt: Application.UserBookmarkReceipt = {
+    userId,
+    bookmarkedArticleIds: [articleId],
+  };
+
+  expect({
+    article: renderArticle(article),
+    empty: renderArticleList({ articles: [] }),
+    populated: renderArticleList({ articles: [article] }),
+    receipt: renderBookmarkReceipt(receipt),
+  }).toEqual({
+    article: '#events-over-state "Events Over State" [bookmarked]',
+    empty: ["No articles yet."],
+    populated: ["Articles:", '#events-over-state "Events Over State" [bookmarked]'],
+    receipt: "Toggled bookmarks for user-1 (1)",
   });
 });
 
@@ -130,6 +173,32 @@ testEffect("executeAction dispatches each command verb and appends the rebuilt l
         "Counters:",
         "#c1 value=0 status=disabled version=4",
       ],
+    });
+  }).pipe(Effect.provide(inProcessClients)),
+);
+
+testEffect("executeAction toggles bookmarks and lists combined article rows", () =>
+  Effect.gen(function* () {
+    const initial = yield* executeAction(parseArguments(["articles", "user-1"]));
+    const bookmarked = yield* executeAction(
+      parseArguments(["bookmark", "user-1", "events-over-state"]),
+    );
+    const removed = yield* executeAction(
+      parseArguments(["bookmark", "user-1", "events-over-state"]),
+    );
+
+    expect({
+      initial: initial[1],
+      bookmarkedReceipt: bookmarked[0],
+      bookmarkedArticle: bookmarked[2],
+      removedReceipt: removed[0],
+      removedArticle: removed[2],
+    }).toEqual({
+      initial: '#events-over-state "Events Over State" [ ]',
+      bookmarkedReceipt: "Toggled bookmarks for user-1 (1)",
+      bookmarkedArticle: '#events-over-state "Events Over State" [bookmarked]',
+      removedReceipt: "Toggled bookmarks for user-1 (0)",
+      removedArticle: '#events-over-state "Events Over State" [ ]',
     });
   }).pipe(Effect.provide(inProcessClients)),
 );

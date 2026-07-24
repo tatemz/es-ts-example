@@ -32,3 +32,31 @@ export const QueryRpcClient = Object.assign(QueryRpcClientTag, {
     Layer.provide(Application.CounterQueryClientLive),
   ),
 });
+
+export type BookmarkCommandRpcClient = {
+  readonly ToggleArticleBookmark: (
+    command: Application.ToggleArticleBookmarkCommand,
+  ) => Effect.Effect<Application.UserBookmarkReceipt, unknown>;
+};
+
+const BookmarkCommandRpcClientTag = Context.Service<BookmarkCommandRpcClient>(
+  "BookmarkCommandRpcClient",
+);
+export const BookmarkCommandRpcClient = Object.assign(BookmarkCommandRpcClientTag, {
+  local: Layer.effect(BookmarkCommandRpcClientTag, Application.UserCommandClient).pipe(
+    Layer.provide(Application.UserCommandClientLive),
+  ),
+});
+
+export type ArticleQueryRpcClient = {
+  readonly ListArticles: (
+    query: Application.ListArticlesQuery,
+  ) => Effect.Effect<Application.ArticleList, unknown>;
+};
+
+const ArticleQueryRpcClientTag = Context.Service<ArticleQueryRpcClient>("ArticleQueryRpcClient");
+export const ArticleQueryRpcClient = Object.assign(ArticleQueryRpcClientTag, {
+  local: Layer.effect(ArticleQueryRpcClientTag, Application.UserQueryClient).pipe(
+    Layer.provide(Application.UserQueryClientLive),
+  ),
+});

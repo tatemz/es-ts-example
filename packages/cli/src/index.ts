@@ -9,13 +9,19 @@ import * as Rec from "effect/Record";
 
 type CommandVerb = "Create" | "Increment" | "Decrement" | "Disable";
 
-type CounterAction =
+type CliAction =
   | {
       readonly _tag: "Command";
       readonly verb: CommandVerb;
       readonly counterId: Application.CounterId;
     }
   | { readonly _tag: "List" }
+  | {
+      readonly _tag: "ToggleBookmark";
+      readonly userId: Application.UserId;
+      readonly articleId: Application.ArticleId;
+    }
+  | { readonly _tag: "ListArticles"; readonly userId: Application.UserId }
   | { readonly _tag: "Help"; readonly message: string };
 
 const usageLines: ReadonlyArray<string> = [
@@ -27,6 +33,8 @@ const usageLines: ReadonlyArray<string> = [
   "  decrement <counterId>  Subtract one from a counter",
   "  disable <counterId>    Retire a counter",
   "  list                   Show every counter rebuilt from its events",
+  "  bookmark <userId> <articleId>  Toggle an article bookmark",
+  "  articles <userId>              List articles with bookmark state",
 ];
 
 export const usage: string = Arr.join(usageLines, "\n");
@@ -38,17 +46,43 @@ const verbTags: Readonly<Record<string, CommandVerb>> = {
   disable: "Disable",
 };
 
-const helpAction: CounterAction = { _tag: "Help", message: usage };
+const helpAction: CliAction = { _tag: "Help", message: usage };
 
-const commandAction = (verb: CommandVerb, rawId: string | undefined): CounterAction =>
-  rawId === undefined || rawId === ""
+const hasValue = (value: string | undefined): value is string =>
+  value !== undefined && value !== "";
+
+const commandAction = (verb: CommandVerb, rawId: string | undefined): CliAction =>
+  !hasValue(rawId)
     ? helpAction
     : { _tag: "Command", verb, counterId: Application.CounterId.make(rawId) };
 
-export const parseArguments = (argv: ReadonlyArray<string>): CounterAction => {
-  const [verb, rawId] = argv;
+const toggleBookmarkAction = (
+  rawUserId: string | undefined,
+  rawArticleId: string | undefined,
+): CliAction =>
+  !hasValue(rawUserId) || !hasValue(rawArticleId)
+    ? helpAction
+    : {
+        _tag: "ToggleBookmark",
+        userId: Application.UserId.make(rawUserId),
+        articleId: Application.ArticleId.make(rawArticleId),
+      };
+
+const listArticlesAction = (rawUserId: string | undefined): CliAction =>
+  !hasValue(rawUserId)
+    ? helpAction
+    : { _tag: "ListArticles", userId: Application.UserId.make(rawUserId) };
+
+export const parseArguments = (argv: ReadonlyArray<string>): CliAction => {
+  const [verb, rawId, rawArticleId] = argv;
   if (verb === "list") {
     return { _tag: "List" };
+  }
+  if (verb === "bookmark") {
+    return toggleBookmarkAction(rawId, rawArticleId);
+  }
+  if (verb === "articles") {
+    return listArticlesAction(rawId);
   }
   return Fn.pipe(
     Option.fromUndefinedOr(verb),
@@ -71,6 +105,18 @@ export const renderList = (list: Application.CounterList): ReadonlyArray<string>
     onEmpty: () => Arr.of("No counters yet."),
     onNonEmpty: (counters) => Arr.prepend(Arr.map(counters, renderCounter), "Counters:"),
   });
+
+export const renderArticle = (article: Application.ArticleRead): string =>
+  `#${article.articleId} "${article.title}" ${article.bookmarked ? "[bookmarked]" : "[ ]"}`;
+
+export const renderArticleList = (list: Application.ArticleList): ReadonlyArray<string> =>
+  Arr.match(list.articles, {
+    onEmpty: () => Arr.of("No articles yet."),
+    onNonEmpty: (articles) => Arr.prepend(Arr.map(articles, renderArticle), "Articles:"),
+  });
+
+export const renderBookmarkReceipt = (receipt: Application.UserBookmarkReceipt): string =>
+  `Toggled bookmarks for ${receipt.userId} (${Arr.length(receipt.bookmarkedArticleIds)})`;
 
 const dispatch = (
   commands: Application.CounterCommandClient,
@@ -115,38 +161,99 @@ const commandLines = (
     return Arr.prepend(listing, renderReceipt(receipt));
   });
 
-export const executeAction = (
-  action: CounterAction,
+const articleLines = (
+  userId: Application.UserId,
+): Effect.Effect<ReadonlyArray<string>, Application.UserQueryError, Application.UserQueryClient> =>
+  Effect.gen(function* () {
+    const queries = yield* Application.UserQueryClient;
+    const list = yield* queries.ListArticles({ _tag: "ListArticles", userId });
+    return renderArticleList(list);
+  });
+
+const bookmarkLines = (
+  userId: Application.UserId,
+  articleId: Application.ArticleId,
 ): Effect.Effect<
   ReadonlyArray<string>,
-  Application.CounterCommandError | Application.CounterQueryError,
-  Application.CounterCommandClient | Application.CounterQueryClient
+  Application.UserCommandError | Application.UserQueryError,
+  Application.UserCommandClient | Application.UserQueryClient
+> =>
+  Effect.gen(function* () {
+    const commands = yield* Application.UserCommandClient;
+    const receipt = yield* commands.ToggleArticleBookmark({
+      _tag: "ToggleArticleBookmark",
+      userId,
+      articleId,
+    });
+    const listing = yield* articleLines(userId);
+    return Arr.prepend(listing, renderBookmarkReceipt(receipt));
+  });
+
+const executeNonHelpAction = (
+  action: Exclude<CliAction, { readonly _tag: "Help" }>,
+): Effect.Effect<
+  ReadonlyArray<string>,
+  | Application.CounterCommandError
+  | Application.CounterQueryError
+  | Application.UserCommandError
+  | Application.UserQueryError,
+  | Application.CounterCommandClient
+  | Application.CounterQueryClient
+  | Application.UserCommandClient
+  | Application.UserQueryClient
 > => {
-  if (action._tag === "Help") {
-    return Effect.succeed(Arr.of(action.message));
-  }
   if (action._tag === "List") {
     return listLines();
+  }
+  if (action._tag === "ListArticles") {
+    return articleLines(action.userId);
+  }
+  if (action._tag === "ToggleBookmark") {
+    return bookmarkLines(action.userId, action.articleId);
   }
   return commandLines(action.verb, action.counterId);
 };
 
-const counterCliLayer = (
+export const executeAction = (
+  action: CliAction,
+): Effect.Effect<
+  ReadonlyArray<string>,
+  | Application.CounterCommandError
+  | Application.CounterQueryError
+  | Application.UserCommandError
+  | Application.UserQueryError,
+  | Application.CounterCommandClient
+  | Application.CounterQueryClient
+  | Application.UserCommandClient
+  | Application.UserQueryClient
+> =>
+  action._tag === "Help" ? Effect.succeed(Arr.of(action.message)) : executeNonHelpAction(action);
+
+const cliLayer = (
   filePath: string,
 ): Layer.Layer<
-  Application.CounterCommandClient | Application.CounterQueryClient,
+  | Application.CounterCommandClient
+  | Application.CounterQueryClient
+  | Application.UserCommandClient
+  | Application.UserQueryClient,
   never,
   FileSystem.FileSystem
 > =>
-  Layer.mergeAll(Application.CounterCommandClientLive, Application.CounterQueryClientLive).pipe(
-    Layer.provide(Application.DomainEventStore.jsonFile(filePath)),
-  );
+  Layer.mergeAll(
+    Application.CounterCommandClientLive,
+    Application.CounterQueryClientLive,
+    Application.UserCommandClientLive,
+    Application.UserQueryClientLive,
+  ).pipe(Layer.provide(Application.DomainEventStore.jsonFile(filePath)));
 
 export const runCli = (
   argv: ReadonlyArray<string>,
   filePath: string,
 ): Effect.Effect<
   ReadonlyArray<string>,
-  Application.CounterCommandError | Application.CounterQueryError,
+  | Application.CounterCommandError
+  | Application.CounterQueryError
+  | Application.UserCommandError
+  | Application.UserQueryError,
   FileSystem.FileSystem
-> => executeAction(parseArguments(argv)).pipe(Effect.provide(counterCliLayer(filePath)));
+> => executeAction(parseArguments(argv)).pipe(Effect.provide(cliLayer(filePath)));
