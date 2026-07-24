@@ -293,7 +293,7 @@ behavior.
 ## Request flow
 
 ```mermaid
-flowchart LR
+flowchart TD
   view["CLI or web"] --> rpc["RPC client"]
   rpc --> handler["Application handler"]
   handler --> load["Load events"]
