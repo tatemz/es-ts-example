@@ -1,110 +1,375 @@
-# Counter Event-Sourcing POC
+# Event Sourcing with TypeScript and Effect
 
-A minimal, production-grade **event-sourcing** example: a bounded counter whose
-state is never stored directly. Every change is an event; current state is
-rebuilt by replaying the event stream.
+This project is a small example of event sourcing.
 
-One shared Effect application core exposes commands and queries over in-process
-RPC. Two independent delivery views consume the _same_ RPC client tags:
+It has two business areas:
 
-- `packages/cli` — an argv-driven terminal view.
-- `packages/web` — a server-rendered HTTP MVC view.
+- A counter that stays between 0 and 5.
+- A user who can bookmark articles.
 
-Neither view touches the domain or the event store directly; they depend only on
-the RPC client tags in `packages/application`. That boundary is the whole point:
-swap the view, keep the model.
+You can use the same application from a CLI or a web page. Both views call the
+same RPC clients. Neither view reads the event store or domain code directly.
 
-## Architecture
-
-```mermaid
-flowchart TD
-  cli[packages/cli - argv view] --> client
-  web[packages/web - HTTP MVC view] --> client
-  client["CounterCommandClient / CounterQueryClient (in-process RPC)"] --> handlers[application counter handlers]
-  handlers --> domain[domain counter decisions]
-  handlers --> repo[event-sourcing repository]
-  repo --> store["DomainEventStore: memory | json-file | postgres"]
-```
-
-The counter's rules live in `packages/domain` as pure decisions: it counts
-between 0 and 5, rejects going out of bounds, and freezes when disabled. See
-`features/product/counter/counter.feature` for the behavior contract.
-
-## Start Here
+## Run it
 
 Use Bun `1.3.14`.
 
 ```shell
 bun install
-```
-
-### Web view
-
-```shell
 bun run start:web
 ```
 
-Serves the counter page at `/` on port `3000`. Create counters, then increment,
-decrement, or disable them. Every action posts a command through the RPC client
-and re-renders the list rebuilt from events.
+Open these pages:
 
-### CLI view
+- `http://localhost:3000/` shows counters.
+- `http://localhost:3000/articles` shows articles and bookmarks.
+
+The web app uses `FooBar` as the logged-in user. This keeps authentication out
+of the example.
+
+Try the CLI:
 
 ```shell
+# Counter commands
 bun run start:cli -- create counter-1
 bun run start:cli -- increment counter-1
-bun run start:cli -- decrement counter-1
-bun run start:cli -- disable counter-1
 bun run start:cli -- list
+
+# Bookmark commands
+bun run start:cli -- articles FooBar
+bun run start:cli -- bookmark FooBar events-over-state
+bun run start:cli -- articles FooBar
 ```
 
-Commands: `create`, `increment`, `decrement`, `disable` (each takes a counter
-id), and `list`. Run with no arguments to print usage.
+The CLI and web app use the same event file. A bookmark from the CLI appears on
+the web page.
 
-## Where the events land
+## Event sourcing in one minute
 
-Both views default to the `json-file` store. Events are appended to
-`.counter-events.json` at the repo root (override with `EVENT_STORE_FILE`).
+A normal application often stores only its latest state:
 
-Open that file to see the payoff: the counter's state is derived, but the event
-log is the source of truth. The CLI and web view share the same file, so a
-counter created on the CLI shows up in the web view and vice versa.
+```json
+{
+  "userId": "FooBar",
+  "bookmarkedArticleIds": ["events-over-state"]
+}
+```
 
-## Commands
+An event-sourced application stores the facts that caused that state:
 
-- Full gate (lint, build, tests, BDD, mutation): `bun run check`
-- Everything except mutation: `bun run check:without-mutation`
-- Single package gate: `bun --filter @es-ts-example/<package> check`
-- Product BDD: `bun run e2e:domain` and `bun run e2e:application`
-- Postgres event-store test (opt-in):
-  `RUN_POSTGRES_TESTS=1 bun --filter @es-ts-example/event-sourcing test:postgres`
+```json
+{ "_tag": "ArticleBookmarked", "userId": "FooBar", "articleId": "events-over-state" }
+{ "_tag": "ArticleBookmarked", "userId": "FooBar", "articleId": "small-batches" }
+{ "_tag": "ArticleBookmarkRemoved", "userId": "FooBar", "articleId": "small-batches" }
+```
 
-## Runtime configuration
+The application replays these events in order. The result is one bookmarked
+article: `events-over-state`.
 
-- `WEB_PORT` overrides the `start:web` port wrapper; `PORT` is read by the web
-  runtime and defaults to `3000`.
-- `STORAGE_BACKEND` selects the store. The running views accept `memory` and
-  `json-file` (default `json-file`). The `event-sourcing` package also ships a
-  `postgres` store, exercised only by its opt-in test.
-- `EVENT_STORE_FILE` sets the json-file path.
-- `DATABASE_URL` configures the Postgres event store for the opt-in test.
+The event log is the source of truth. Current state is a result of that log.
 
-## Packages
+This gives you:
 
-- `packages/domain`: pure counter decisions and events.
-- `packages/application`: command/query handlers, RPC contracts, read models,
-  and the `DomainEventStore` service.
-- `packages/event-sourcing`: product-agnostic event-sourcing contracts and
-  stores (memory, json-file, postgres).
-- `packages/cli`: the terminal view.
-- `packages/web`: the HTTP MVC view (one theme).
-- `packages/test-support`: shared Effect test helpers.
+- A history of what happened.
+- A way to rebuild state.
+- A way to create new read models from old events.
+- A clear place for business rules.
 
-## Quality gate
+It also has costs:
 
-This POC mirrors a full enterprise gate scoped to the counter: Oxlint with
-local `es-ts-example/*` architecture rules, Oxfmt, Dependency Cruiser, knip, repo policy
-scripts, 100% unit coverage, property tests, Effect BDD, and Stryker mutation
-testing at a **100% threshold** across every package.
+- You must keep event order.
+- You must design stable event data.
+- Queries often need separate read models.
+- Old events can require migration work.
 
-See `AGENTS.md` for the contributor operating manual.
+## Important words
+
+### Command
+
+A command asks the system to do something.
+
+Examples:
+
+- `IncrementCounter`
+- `ToggleArticleBookmark`
+
+A command can fail. For example, a disabled counter cannot increment.
+
+### Event
+
+An event records a fact that already happened.
+
+Examples:
+
+- `CounterIncremented`
+- `ArticleBookmarked`
+- `ArticleBookmarkRemoved`
+
+Event names use the past tense because the fact is complete.
+
+### Aggregate
+
+An aggregate protects business rules for one item.
+
+Examples:
+
+- One counter aggregate protects one counter.
+- One user aggregate protects one user's bookmarks.
+
+The aggregate receives its old events, rebuilds its state, and decides whether
+to record a new event.
+
+### Reducer
+
+A reducer applies one event to the current state.
+
+```text
+old state + event = new state
+```
+
+The reducer must be deterministic. The same events in the same order must
+always produce the same state.
+
+### Projection
+
+A projection turns events into data that is easy to query.
+
+The bookmark projection is a record. Its key contains a user id and article id.
+Its value shows whether the bookmark is active.
+
+```typescript
+{
+  "6:FooBar:events-over-state": true,
+  "6:FooBar:small-batches": false
+}
+```
+
+The first value is `true` because the bookmark is active. The second value is
+`false` because the user removed that bookmark.
+
+## The user bookmark domain
+
+A user has two possible states:
+
+```typescript
+export const UserDoesNotExist = Schema.TaggedStruct("UserDoesNotExist", {});
+
+export const ExistingUser = Schema.TaggedStruct("ExistingUser", {
+  userId: UserId,
+  bookmarkedArticleIds: Schema.Array(ArticleId),
+});
+
+export const UserState = Schema.Union([UserDoesNotExist, ExistingUser]);
+```
+
+There is no `UserCreated` event. A user exists after their first interaction.
+
+The domain records two bookmark facts:
+
+```typescript
+export const ArticleBookmarked = Schema.TaggedStruct("ArticleBookmarked", {
+  userId: UserId,
+  articleId: ArticleId,
+});
+
+export const ArticleBookmarkRemoved = Schema.TaggedStruct("ArticleBookmarkRemoved", {
+  userId: UserId,
+  articleId: ArticleId,
+});
+```
+
+The command is named `toggleArticleBookmark`. The event is not named
+`ArticleBookmarkToggled`.
+
+This distinction matters. A command describes intent. An event describes the
+result. The event log stays clear because each event says whether the bookmark
+was added or removed.
+
+The decision is small:
+
+```typescript
+const isBookmarked =
+  Schema.is(ExistingUser)(aggregate.state) &&
+  Arr.contains(aggregate.state.bookmarkedArticleIds, input.articleId);
+
+const event = isBookmarked
+  ? ArticleBookmarkRemoved.make({ userId: aggregate.aggregateId, articleId: input.articleId })
+  : ArticleBookmarked.make({ userId: aggregate.aggregateId, articleId: input.articleId });
+
+return accept(recordUserEvent(event)(aggregate));
+```
+
+The first toggle records `ArticleBookmarked`. The next toggle records
+`ArticleBookmarkRemoved`.
+
+## Static articles and event-sourced bookmarks
+
+The article catalog is normal static data. It is not part of the event-sourced
+domain.
+
+```typescript
+export const articleCatalog = [
+  { articleId: "events-over-state", title: "Events Over State" },
+  { articleId: "effective-boundaries", title: "Effective Boundaries" },
+  // ...
+];
+```
+
+Only bookmark activity becomes events. This is an important boundary. Event
+sourcing does not mean that all data must become an event stream.
+
+The `ListArticles` query does three things:
+
+1. It reads all user bookmark events.
+2. It folds the events into the bookmark projection.
+3. It joins the projection with the static article catalog.
+
+The result is ready for either view:
+
+```typescript
+{
+  articles: [
+    {
+      articleId: "events-over-state",
+      title: "Events Over State",
+      bookmarked: true,
+    },
+  ];
+}
+```
+
+The CLI and web app do not repeat this join. They receive the same result from
+the application RPC query.
+
+## The counter domain
+
+The counter shows rules that can reject commands.
+
+- A counter starts at 0.
+- Its minimum value is 0.
+- Its maximum value is 5.
+- A disabled counter cannot change.
+
+For example, the increment decision checks the state before it records an
+event:
+
+```typescript
+if (Schema.is(CounterNotCreated)(aggregate.state)) {
+  return reject(counterDoesNotExist(aggregate.aggregateId));
+}
+
+if (Schema.is(DisabledCounter)(aggregate.state)) {
+  return reject(counterIsDisabled(aggregate.aggregateId));
+}
+
+if (aggregate.state.value >= maximumCounterValue) {
+  return reject(counterMaximumReached(aggregate.aggregateId));
+}
+
+return accept(
+  recordCounterEvent(
+    CounterIncremented.make({
+      counterId: aggregate.aggregateId,
+    }),
+  )(aggregate),
+);
+```
+
+This code does not use a database, HTTP request, or UI type. It is a pure
+business decision.
+
+See `features/product/counter/counter.feature` for examples written as product
+behavior.
+
+## Request flow
+
+```mermaid
+flowchart LR
+  view["CLI or web"] --> rpc["RPC client"]
+  rpc --> handler["Application handler"]
+  handler --> load["Load events"]
+  load --> aggregate["Rebuild aggregate"]
+  aggregate --> decision["Run domain decision"]
+  decision --> append["Append new event"]
+  append --> query["Fold projection"]
+  query --> view
+```
+
+For a bookmark command:
+
+1. The view sends `userId` and `articleId`.
+2. The handler loads that user's events.
+3. The repository rebuilds the user aggregate.
+4. The domain chooses one bookmark event.
+5. The repository appends the event.
+6. The next query rebuilds the projection.
+
+## Code map
+
+- `packages/domain` contains states, events, reducers, and business decisions.
+- `packages/application` loads aggregates, saves events, builds projections,
+  and exposes RPC contracts.
+- `packages/event-sourcing` contains reusable aggregate, repository,
+  projection, and event-store tools.
+- `packages/cli` parses arguments and renders text.
+- `packages/web` handles HTTP, controllers, models, and server-rendered HTML.
+- `packages/test-support` contains shared test helpers.
+
+The dependency direction is important:
+
+```text
+CLI/Web -> Application -> Domain
+                    \-> Event-sourcing tools
+```
+
+The domain does not depend on the application, CLI, or web packages.
+
+## Inspect the event log
+
+The default JSON event store is `.counter-events.json` in the repository root.
+The old file name remains, but the file now stores counter and user events.
+
+Set another path with `EVENT_STORE_FILE`:
+
+```shell
+EVENT_STORE_FILE=/tmp/example-events.json bun run start:web
+```
+
+The running views support these stores:
+
+- `memory`: loses events when the process stops.
+- `json-file`: writes events to a local JSON file.
+
+The event-sourcing package also has a Postgres store for opt-in tests.
+
+## Tests and checks
+
+Run the full gate:
+
+```shell
+bun run check
+```
+
+This command runs:
+
+- TypeScript builds.
+- Formatting and lint checks.
+- Package-boundary and repository-policy checks.
+- Unit tests with 100% line coverage.
+- Property tests.
+- End-to-end tests.
+- Mutation tests with a 100% threshold.
+
+Use the faster gate while you work:
+
+```shell
+bun run check:without-mutation
+```
+
+Run the optional Postgres test:
+
+```shell
+RUN_POSTGRES_TESTS=1 bun --filter @es-ts-example/event-sourcing test:postgres
+```
+
+See `AGENTS.md` for contributor rules and package-specific test commands.
