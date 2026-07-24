@@ -6,21 +6,21 @@ import * as Layer from "effect/Layer";
 import { getCounterPageController } from "../../../src/controllers/getCounterPage.controller.ts";
 import { postCounterCommandController } from "../../../src/controllers/postCounterCommand.controller.ts";
 import { postCreateCounterController } from "../../../src/controllers/postCreateCounter.controller.ts";
-import { CommandRpcClient, QueryRpcClient } from "../../../src/rpcClients.ts";
 
-const localClients = Layer.mergeAll(CommandRpcClient.local, QueryRpcClient.local).pipe(
-  Layer.provide(Application.DomainEventStore.inMemory),
-);
+const localClients = Layer.mergeAll(
+  Application.CounterCommandClientLive,
+  Application.CounterQueryClientLive,
+).pipe(Layer.provide(Application.DomainEventStore.inMemory));
 
 const createCounter = (
-  commands: CommandRpcClient,
+  commands: Application.CounterCommandClient,
   id: string,
-): Effect.Effect<Application.CounterCommandReceipt, unknown> =>
+): Effect.Effect<Application.CounterCommandReceipt, Application.CounterCommandError> =>
   commands.CreateCounter({ _tag: "CreateCounter", counterId: Application.CounterId.make(id) });
 
 testEffect("getCounterPageController projects the store and normalizes error hints", () =>
   Effect.gen(function* () {
-    const commands = yield* CommandRpcClient;
+    const commands = yield* Application.CounterCommandClient;
     yield* createCounter(commands, "alpha");
 
     const page = yield* getCounterPageController({});
@@ -41,12 +41,12 @@ testEffect("getCounterPageController projects the store and normalizes error hin
     }).toEqual({
       list: "CounterListPopulated",
       row: "alpha",
-      missingField: "EsTsExampleTextFieldPresentationError",
-      missingAlert: "EsTsExampleAlertHidden",
-      failedAlert: "EsTsExampleAlertVisible",
-      failedField: "EsTsExampleTextFieldPresentationDefault",
-      unknownField: "EsTsExampleTextFieldPresentationDefault",
-      unknownAlert: "EsTsExampleAlertHidden",
+      missingField: "TextFieldPresentationError",
+      missingAlert: "AlertHidden",
+      failedAlert: "AlertVisible",
+      failedField: "TextFieldPresentationDefault",
+      unknownField: "TextFieldPresentationDefault",
+      unknownAlert: "AlertHidden",
       unknownValue: "beta",
     });
   }).pipe(Effect.provide(localClients)),
@@ -68,7 +68,7 @@ testEffect("postCreateCounterController validates, creates, and reports command 
 
 testEffect("postCounterCommandController dispatches each verb and guards the rest", () =>
   Effect.gen(function* () {
-    const commands = yield* CommandRpcClient;
+    const commands = yield* Application.CounterCommandClient;
     yield* createCounter(commands, "alpha");
     yield* createCounter(commands, "gamma");
 

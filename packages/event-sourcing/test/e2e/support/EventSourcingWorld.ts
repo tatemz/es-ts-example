@@ -21,7 +21,7 @@ export const makeRepository = (store: EventSourcing.EventStore<CounterEvent>) =>
   EventSourcing.makeAggregateRepository({
     store,
     initialState: 0,
-    applyEvent: applyCounterEvent,
+    reducer: applyCounterEvent,
   });
 
 export type EventSourcingScenarioState = {

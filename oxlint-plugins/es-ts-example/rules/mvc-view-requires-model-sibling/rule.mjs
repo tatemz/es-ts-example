@@ -4,7 +4,7 @@ import * as Fn from "effect/Function";
 import * as Str from "effect/String";
 
 import { getBasename, isRealFilename, isWebSourcePath } from "../shared/filename.mjs";
-import { modelPathForStem, webSrcRootFromFilename } from "../shared/paths.mjs";
+import { modelPathForStem, webMvcLayer, webSrcRootFromFilename } from "../shared/paths.mjs";
 
 export const mvcViewRequiresModelSiblingRuleName = "mvc-view-requires-model-sibling";
 
@@ -14,11 +14,11 @@ const modelSuffix = ".model.ts";
 const modelFilenameForView = (basename) =>
   `${Fn.pipe(basename, Str.replace(/\.view\.tsx$/, ""))}${modelSuffix}`;
 
-const hasModelOrVariant = (filename, basename) => {
+const hasModelOrVariant = (filename, basename, layer) => {
   const webRoot = webSrcRootFromFilename(filename);
-  const modelsDir = `${webRoot}/models`;
+  const modelsDir = `${webRoot}/models/${layer}`;
   const viewStem = Fn.pipe(basename, Str.replace(/\.view\.tsx$/, ""));
-  const exact = modelPathForStem(webRoot, viewStem);
+  const exact = modelPathForStem(webRoot, layer, viewStem);
 
   if (existsSync(exact)) {
     return true;
@@ -64,8 +64,13 @@ export const mvcViewRequiresModelSibling = {
       return {};
     }
 
-    const modelFilename = modelFilenameForView(basename);
-    if (hasModelOrVariant(filename, basename)) {
+    const layer = webMvcLayer(filename);
+    if (layer === undefined) {
+      return {};
+    }
+
+    const modelFilename = `${layer}/${modelFilenameForView(basename)}`;
+    if (hasModelOrVariant(filename, basename, layer)) {
       return {};
     }
 

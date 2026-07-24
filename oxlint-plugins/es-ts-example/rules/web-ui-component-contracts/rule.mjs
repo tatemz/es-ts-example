@@ -1,12 +1,11 @@
 import { getBasename } from "../shared/filename.mjs";
 import { normalizedFilename, sourceText } from "../shared/context.mjs";
-import { webViewPath, webEsTsExampleRenderablePath } from "../shared/paths.mjs";
+import { webControlRenderablePath } from "../shared/paths.mjs";
 import { createRule, report } from "../shared/rule.mjs";
 
 export const webUiComponentContractsRuleName = "web-ui-component-contracts";
 
-const isUiView = (filename) =>
-  webViewPath(filename) && /^EsTsExample[^/]+\.view\.tsx$/.test(getBasename(filename));
+const isUiView = (filename) => /\.view\.tsx$/.test(getBasename(filename));
 
 const componentName = (filename) => getBasename(filename).replace(/\.view\.tsx$/, "");
 
@@ -32,7 +31,7 @@ export const webUiComponentContracts = createRule({
   },
   create(context) {
     const filename = normalizedFilename(context);
-    if (!webEsTsExampleRenderablePath(filename)) {
+    if (!webControlRenderablePath(filename)) {
       return {};
     }
 

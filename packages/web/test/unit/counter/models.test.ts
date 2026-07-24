@@ -1,64 +1,79 @@
 import { expect, test } from "bun:test";
+import * as Arr from "effect/Array";
 import * as Schema from "effect/Schema";
-import { makeCounterPageModel } from "../../../src/factories/CounterPage.factory.ts";
-import { CounterPageModel } from "../../../src/models/CounterPage.model.ts";
-import { EsTsExampleAlertModel } from "../../../src/models/EsTsExampleAlert.model.ts";
-import { EsTsExampleHtmlDocumentModel } from "../../../src/models/EsTsExampleHtmlDocument.model.ts";
-import { EsTsExamplePostFormModel } from "../../../src/models/EsTsExamplePostForm.model.ts";
-import { EsTsExampleSubmitButtonModel } from "../../../src/models/EsTsExampleSubmitButton.model.ts";
-import { EsTsExampleTextFieldModel } from "../../../src/models/EsTsExampleTextField.model.ts";
+import { makeCounterPageModel } from "../../../src/factories/pages/CounterPage.factory.ts";
+import { CounterPageModel } from "../../../src/models/pages/CounterPage.model.ts";
+import { AlertModel } from "../../../src/models/controls/Alert.model.ts";
+import { HtmlDocumentModel } from "../../../src/models/controls/HtmlDocument.model.ts";
+import { PostFormModel } from "../../../src/models/controls/PostForm.model.ts";
+import { SubmitButtonModel } from "../../../src/models/controls/SubmitButton.model.ts";
+import { TextFieldModel } from "../../../src/models/controls/TextField.model.ts";
 
 const validPage = makeCounterPageModel({
-  counters: [{ counterId: "alpha", status: "active", value: 1, version: 2 }],
+  counters: [{ _tag: "ActiveCounterSummary", counterId: "alpha", value: 1, version: 2 }],
   error: "command-failed",
   newCounterId: "beta",
 });
 
 const isPage = Schema.is(CounterPageModel);
 
+const statusTextsOf = (page: CounterPageModel): ReadonlyArray<string> =>
+  page.list._tag === "CounterListPopulated" ? Arr.map(page.list.rows, (row) => row.statusText) : [];
+
+test("a counter row shows the state its summary reports", () => {
+  const page = makeCounterPageModel({
+    counters: [
+      { _tag: "ActiveCounterSummary", counterId: "alpha", value: 1, version: 2 },
+      { _tag: "DisabledCounterSummary", counterId: "beta", value: 4, version: 9 },
+    ],
+  });
+
+  expect(statusTextsOf(page)).toEqual(["status=active", "status=disabled"]);
+});
+
 test("each counter model schema accepts well-formed values and rejects malformed structure", () => {
   expect({
-    submitValid: Schema.is(EsTsExampleSubmitButtonModel)({
-      _tag: "EsTsExampleSubmitButtonModel",
+    submitValid: Schema.is(SubmitButtonModel)({
+      _tag: "SubmitButtonModel",
       label: "x",
       tone: "primary",
     }),
-    submitBadTone: Schema.is(EsTsExampleSubmitButtonModel)({
-      _tag: "EsTsExampleSubmitButtonModel",
+    submitBadTone: Schema.is(SubmitButtonModel)({
+      _tag: "SubmitButtonModel",
       label: "x",
       tone: "tertiary",
     }),
-    alertValid: Schema.is(EsTsExampleAlertModel)({ _tag: "EsTsExampleAlertVisible", message: "m" }),
-    alertMissingMessage: Schema.is(EsTsExampleAlertModel)({ _tag: "EsTsExampleAlertVisible" }),
-    textValid: Schema.is(EsTsExampleTextFieldModel)({
-      _tag: "EsTsExampleTextFieldModel",
+    alertValid: Schema.is(AlertModel)({ _tag: "AlertVisible", message: "m" }),
+    alertMissingMessage: Schema.is(AlertModel)({ _tag: "AlertVisible" }),
+    textValid: Schema.is(TextFieldModel)({
+      _tag: "TextFieldModel",
       id: "i",
       label: "l",
       name: "n",
-      presentation: { _tag: "EsTsExampleTextFieldPresentationDefault" },
+      presentation: { _tag: "TextFieldPresentationDefault" },
       value: "v",
     }),
-    textBadPresentation: Schema.is(EsTsExampleTextFieldModel)({
-      _tag: "EsTsExampleTextFieldModel",
+    textBadPresentation: Schema.is(TextFieldModel)({
+      _tag: "TextFieldModel",
       id: "i",
       label: "l",
       name: "n",
       presentation: { _tag: "Nope" },
       value: "v",
     }),
-    docValid: Schema.is(EsTsExampleHtmlDocumentModel)({
-      _tag: "EsTsExampleHtmlDocumentModel",
+    docValid: Schema.is(HtmlDocumentModel)({
+      _tag: "HtmlDocumentModel",
       description: "d",
       stylesheetHref: "/s",
       title: "t",
     }),
-    postFormValid: Schema.is(EsTsExamplePostFormModel)({
-      _tag: "EsTsExamplePostFormModel",
+    postFormValid: Schema.is(PostFormModel)({
+      _tag: "PostFormModel",
       action: "/a",
       hiddenFields: [],
     }),
-    postFormMalformedHiddenField: Schema.is(EsTsExamplePostFormModel)({
-      _tag: "EsTsExamplePostFormModel",
+    postFormMalformedHiddenField: Schema.is(PostFormModel)({
+      _tag: "PostFormModel",
       action: "/a",
       hiddenFields: [{}],
     }),

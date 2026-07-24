@@ -3,7 +3,7 @@ import * as Effect from "effect/Effect";
 import * as Fn from "effect/Function";
 import * as Result from "effect/Result";
 import type { Aggregate, AggregateId, Reducer } from "./aggregate.ts";
-import { reconstituteAggregate } from "./aggregate.ts";
+import { replayAggregate } from "./aggregate.ts";
 import type { Decision } from "./decision.ts";
 import type { EventStore, ExpectedVersionConflict } from "./event-store.ts";
 
@@ -25,7 +25,7 @@ export const makeAggregateRepository = <
 >(options: {
   readonly store: EventStore<Event, StoreError>;
   readonly initialState: State;
-  readonly applyEvent: Reducer<State, Event>;
+  readonly reducer: Reducer<State, Event>;
   readonly streamName?: (aggregateId: Id) => AggregateId;
 }): AggregateRepository<State, Event, Id, StoreError> => {
   const streamNameFor = options.streamName ?? ((aggregateId: Id): AggregateId => aggregateId);
@@ -33,10 +33,10 @@ export const makeAggregateRepository = <
     Fn.pipe(
       options.store.fetch({ aggregateId: streamNameFor(aggregateId) }),
       Effect.map((records) =>
-        reconstituteAggregate({
+        replayAggregate({
           aggregateId,
           initialState: options.initialState,
-          applyEvent: options.applyEvent,
+          reducer: options.reducer,
           events: Fn.pipe(
             records,
             Arr.map((record) => record.event),

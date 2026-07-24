@@ -17,7 +17,7 @@ export type StoredEvent<Event> = {
   readonly event: Event;
 };
 
-export type AppendEvents<Event> = {
+export type AppendRequest<Event> = {
   readonly aggregateId: AggregateId;
   readonly expectedVersion: AggregateVersion;
   readonly events: ReadonlyArray<Event>;
@@ -28,18 +28,18 @@ export type AppendEvents<Event> = {
  * processing event N, persist `lastEventStoreSequenceNumber = N` and resume
  * reads with `startingEventSequenceNumber = N + 1`.
  */
-export type FetchEvents = {
+export type StreamQuery = {
   readonly aggregateId: AggregateId;
   readonly startingEventSequenceNumber?: EventStoreSequenceNumber;
 };
 
 /**
  * Global cross-aggregate read. Same inclusive-lower-bound contract as
- * {@link FetchEvents}. `limit`, when set, caps the number of events returned
+ * {@link StreamQuery}. `limit`, when set, caps the number of events returned
  * by the underlying stream so callers can page through arbitrarily large
  * histories without unbounded buffering.
  */
-export type FetchAllEvents = {
+export type AllEventsQuery = {
   readonly startingEventSequenceNumber?: EventStoreSequenceNumber;
   readonly limit?: number;
 };
@@ -81,10 +81,10 @@ const StoredEvents = <Event>(event: Schema.Codec<Event, unknown>) =>
   Schema.Array(StoredEvent(event));
 
 export type EventStore<Event, Error = never> = {
-  readonly fetch: (query: FetchEvents) => Effect.Effect<ReadonlyArray<StoredEvent<Event>>, Error>;
-  readonly fetchAll: (query: FetchAllEvents) => Stream.Stream<StoredEvent<Event>, Error>;
+  readonly fetch: (query: StreamQuery) => Effect.Effect<ReadonlyArray<StoredEvent<Event>>, Error>;
+  readonly fetchAll: (query: AllEventsQuery) => Stream.Stream<StoredEvent<Event>, Error>;
   readonly append: (
-    command: AppendEvents<Event>,
+    command: AppendRequest<Event>,
   ) => Effect.Effect<ReadonlyArray<StoredEvent<Event>>, ExpectedVersionConflict | Error>;
 };
 
@@ -100,7 +100,7 @@ const aggregateVersionInRecords = <Event>(
 
 const recordsForAggregate = <Event>(
   records: ReadonlyArray<StoredEvent<Event>>,
-  query: FetchEvents,
+  query: StreamQuery,
 ): ReadonlyArray<StoredEvent<Event>> =>
   Fn.pipe(
     records,
@@ -113,7 +113,7 @@ const recordsForAggregate = <Event>(
 
 const recordsFromSequenceNumber = <Event>(
   records: ReadonlyArray<StoredEvent<Event>>,
-  query: FetchAllEvents,
+  query: AllEventsQuery,
 ): ReadonlyArray<StoredEvent<Event>> =>
   Fn.pipe(
     records,
@@ -123,7 +123,7 @@ const recordsFromSequenceNumber = <Event>(
   );
 
 export const storedEventsForAppend = <Event>(options: {
-  readonly command: AppendEvents<Event>;
+  readonly command: AppendRequest<Event>;
   readonly startVersion: AggregateVersion;
   readonly startSequenceNumber: EventStoreSequenceNumber;
 }): ReadonlyArray<StoredEvent<Event>> =>
@@ -144,7 +144,7 @@ export const makeInMemoryEventStore = <Event>(
     const initialEvents = seed ?? [];
     const storedEventsRef = yield* Ref.make(initialEvents);
 
-    const fetchAll = (query: FetchAllEvents): Stream.Stream<StoredEvent<Event>> => {
+    const fetchAll = (query: AllEventsQuery): Stream.Stream<StoredEvent<Event>> => {
       const iterableEffect = Fn.pipe(
         Ref.get(storedEventsRef),
         Effect.map((records) => recordsFromSequenceNumber(records, query)),
@@ -249,12 +249,12 @@ export const makeJsonFileEventStore = <Event>(
     const readRecords = readJsonFileRecords(event);
 
     const store: EventStore<Event, EventStorePersistenceFailure> = {
-      fetch: (query: FetchEvents) =>
+      fetch: (query: StreamQuery) =>
         Fn.pipe(
           readRecords(fs, path),
           Effect.map((records) => recordsForAggregate(records, query)),
         ),
-      fetchAll: (query: FetchAllEvents) => {
+      fetchAll: (query: AllEventsQuery) => {
         const base = Stream.fromIterableEffect(
           Fn.pipe(
             readRecords(fs, path),
@@ -269,7 +269,7 @@ export const makeJsonFileEventStore = <Event>(
           }),
         );
       },
-      append: (command: AppendEvents<Event>) =>
+      append: (command: AppendRequest<Event>) =>
         Effect.gen(function* () {
           const records = yield* readRecords(fs, path);
           const actualVersion = aggregateVersionInRecords(records, command.aggregateId);

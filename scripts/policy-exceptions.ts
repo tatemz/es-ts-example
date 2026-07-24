@@ -21,12 +21,7 @@ export const policyExceptions: ReadonlyArray<PolicyException> = Arr.make(
     removalCondition:
       "Delete entries once the adapter has deterministic unit-level mutation tests.",
     ownerScript: "scripts/lint-mutation-scope.ts",
-    paths: Arr.make(
-      "packages/web/src/identityGenerators.ts",
-      "packages/web/src/mvc/jsx-runtime.ts",
-      "packages/web/src/rpcClients.ts",
-      "packages/web/src/server.ts",
-    ),
+    paths: Arr.make("packages/web/src/mvc/jsx-runtime.ts", "packages/web/src/server.ts"),
     patterns: noPatterns,
   },
   {

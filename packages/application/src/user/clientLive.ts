@@ -2,7 +2,7 @@ import * as Layer from "effect/Layer";
 import { makeInProcessRpcClient } from "../rpc/inProcess.ts";
 import { UserCommandHandlers, UserQueryHandlers } from "./handlers.ts";
 import { UserCommandApi, UserQueryApi } from "./rpc.ts";
-import { UserCommandClient, UserQueryClient } from "./services.ts";
+import { UserCommandClient, UserQueryClient } from "./clients.ts";
 
 export const UserCommandClientLive = Layer.effect(
   UserCommandClient,

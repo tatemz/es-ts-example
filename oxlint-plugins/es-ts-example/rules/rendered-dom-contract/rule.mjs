@@ -9,20 +9,7 @@ const classAttributePattern = /\bclass="/;
 const cssTokenPattern =
   /\b(?:absolute|alert|aspect-|backdrop-|badge|bg-|border|btn|card|dropdown|flex|font-|gap-|grid|hidden|inline|items-|join|justify-|leading-|m-|max-|menu|min-|object-|overflow-|p-|place-|relative|rounded|shadow|size-|space-|text-|tracking-|w-|z-)/;
 
-const ratchet = {
-  paths: [
-    "packages/web/test/unit/counter.test.ts",
-    "packages/web/test/unit/identity.test.ts",
-    "packages/web/test/unit/payments.test.ts",
-  ],
-  patterns: [
-    /^packages\/web\/test\/unit\/adventure\/.+\.test\.ts$/,
-    /^packages\/web\/test\/unit\/browse\/.+\.test\.ts$/,
-    /^packages\/web\/test\/unit\/creator\/.+\.test\.ts$/,
-    /^packages\/web\/test\/unit\/party\/.+\.test\.ts$/,
-    /^packages\/web\/test\/unit\/ui\/.+\.test\.ts$/,
-  ],
-};
+const ratchet = { paths: [], patterns: [] };
 
 const previousExpression = (expression) => {
   if (expression?.type === "CallExpression") {

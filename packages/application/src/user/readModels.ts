@@ -49,7 +49,12 @@ export const initialBookmarkProjectionState: BookmarkProjectionState = {
   bookmarks: {},
 };
 
-export const bookmarkKey = (userId: string, articleId: string): string =>
+/**
+ * One flat map holds every user's bookmarks, so the key must be unambiguous.
+ * The length prefix is what makes it so: without it, `("ab", "c")` and
+ * `("a", "bc")` would both produce `ab:c` and collide.
+ */
+export const bookmarkProjectionKey = (userId: string, articleId: string): string =>
   `${userId.length}:${userId}:${articleId}`;
 
 const isArticleBookmarked = (
@@ -58,11 +63,11 @@ const isArticleBookmarked = (
   articleId: Domain.ArticleId,
 ): boolean =>
   Fn.pipe(
-    Rec.get(state.bookmarks, bookmarkKey(userId, articleId)),
+    Rec.get(state.bookmarks, bookmarkProjectionKey(userId, articleId)),
     Option.getOrElse(() => false),
   );
 
-export const articleCatalogList = (
+export const articlesWithBookmarks = (
   state: BookmarkProjectionState,
   userId: Domain.UserId,
 ): ArticleList => ({
@@ -82,11 +87,15 @@ export const applyBookmarkEvent = (
     ArticleBookmarked: (bookmarked) => ({
       bookmarks: Rec.set(
         state.bookmarks,
-        bookmarkKey(bookmarked.userId, bookmarked.articleId),
+        bookmarkProjectionKey(bookmarked.userId, bookmarked.articleId),
         true,
       ),
     }),
     ArticleBookmarkRemoved: (removed) => ({
-      bookmarks: Rec.set(state.bookmarks, bookmarkKey(removed.userId, removed.articleId), false),
+      bookmarks: Rec.set(
+        state.bookmarks,
+        bookmarkProjectionKey(removed.userId, removed.articleId),
+        false,
+      ),
     }),
   });

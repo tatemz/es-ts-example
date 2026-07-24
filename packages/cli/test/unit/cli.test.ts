@@ -29,11 +29,18 @@ const inProcessClients = Layer.mergeAll(
   Application.UserQueryClientLive,
 ).pipe(Layer.provide(Application.DomainEventStore.inMemory));
 
-const sampleCounter: Application.CounterRead = {
-  counterId: "c1",
+const sampleCounter: Application.CounterSummary = {
+  _tag: "ActiveCounterSummary",
+  counterId,
   value: 2,
-  status: "active",
   version: 3,
+};
+
+const sampleDisabledCounter: Application.CounterSummary = {
+  _tag: "DisabledCounterSummary",
+  counterId,
+  value: 2,
+  version: 4,
 };
 
 const help = { _tag: "Help", message: usage } as const;
@@ -89,13 +96,15 @@ test("usage documents every command on its own line", () => {
   );
 });
 
-test("renderCounter and renderReceipt format the full read model", () => {
+test("renderCounter shows counter state and renderReceipt acknowledges the write", () => {
   expect({
-    counter: renderCounter(sampleCounter),
-    receipt: renderReceipt(sampleCounter),
+    active: renderCounter(sampleCounter),
+    disabled: renderCounter(sampleDisabledCounter),
+    receipt: renderReceipt({ counterId, version: 3 }),
   }).toEqual({
-    counter: "#c1 value=2 status=active version=3",
-    receipt: "Applied #c1 value=2 status=active version=3",
+    active: "#c1 value=2 status=active version=3",
+    disabled: "#c1 value=2 status=disabled version=4",
+    receipt: "Applied #c1 version=3",
   });
 });
 
@@ -153,26 +162,10 @@ testEffect("executeAction dispatches each command verb and appends the rebuilt l
     const disabled = yield* executeAction(parseArguments(["disable", "c1"]));
 
     expect({ created, incremented, decremented, disabled }).toEqual({
-      created: [
-        "Applied #c1 value=0 status=active version=1",
-        "Counters:",
-        "#c1 value=0 status=active version=1",
-      ],
-      incremented: [
-        "Applied #c1 value=1 status=active version=2",
-        "Counters:",
-        "#c1 value=1 status=active version=2",
-      ],
-      decremented: [
-        "Applied #c1 value=0 status=active version=3",
-        "Counters:",
-        "#c1 value=0 status=active version=3",
-      ],
-      disabled: [
-        "Applied #c1 value=0 status=disabled version=4",
-        "Counters:",
-        "#c1 value=0 status=disabled version=4",
-      ],
+      created: ["Applied #c1 version=1", "Counters:", "#c1 value=0 status=active version=1"],
+      incremented: ["Applied #c1 version=2", "Counters:", "#c1 value=1 status=active version=2"],
+      decremented: ["Applied #c1 version=3", "Counters:", "#c1 value=0 status=active version=3"],
+      disabled: ["Applied #c1 version=4", "Counters:", "#c1 value=0 status=disabled version=4"],
     });
   }).pipe(Effect.provide(inProcessClients)),
 );
@@ -216,11 +209,7 @@ testEffect("runCli persists a replayable event stream to the given json file", (
     yield* Effect.ignore(fs.remove(path));
 
     expect({ created, listed, storedCreated: contents.includes("CounterCreated") }).toEqual({
-      created: [
-        "Applied #c1 value=0 status=active version=1",
-        "Counters:",
-        "#c1 value=0 status=active version=1",
-      ],
+      created: ["Applied #c1 version=1", "Counters:", "#c1 value=0 status=active version=1"],
       listed: ["Counters:", "#c1 value=0 status=active version=1"],
       storedCreated: true,
     });

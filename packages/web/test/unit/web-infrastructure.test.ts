@@ -11,7 +11,7 @@ import {
 } from "../../src/mvc/jsx-dev-runtime.ts";
 import { articlesHref, counterHomeHref, webActions, webRoutes } from "../../src/routes.ts";
 import { parseStorageBackend } from "../../src/runtime-config.ts";
-import { postFormEncodingAttributes } from "../../src/views/es-ts-exampleView.support.ts";
+import { postFormEncodingAttributes } from "../../src/views/htmlHelpers.ts";
 
 test("web routes and actions expose the counter surface", () => {
   expect({ webRoutes, webActions }).toEqual({

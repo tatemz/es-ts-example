@@ -6,4 +6,4 @@ export * from "./queries/index.ts";
 export * from "./readModels.ts";
 export * from "./repository.ts";
 export * from "./rpc.ts";
-export * from "./services.ts";
+export * from "./clients.ts";

@@ -1,55 +1,62 @@
 # @es-ts-example/domain
 
-This package owns pure business decisions for five bounded contexts: counter,
-experience, adventure, identity, and payments. A command should be
-understandable from state, events, invariants, and reducer logic without HTTP,
-storage, browser APIs, or provider DTOs.
+This package owns pure business decisions for two bounded contexts: `counter`
+and `user`. A decision must be understandable from state, events, rejections,
+and reducer logic alone: no HTTP, storage, browser APIs, or provider DTOs.
+
+## Reading Order
+
+Each context folder holds the same six files. Read them in this order:
+
+1. `State.ts` — the tagged states a context can be in, and the value bounds
+   those states enforce.
+2. `Events.ts` — the facts that have already happened. Events are never
+   rejected; they are history.
+3. `Reducer.ts` — how one event moves one state to the next.
+4. `Aggregate.ts` — the state plus its version and pending events.
+5. `Rejections.ts` — the tagged reasons a decision can say no. The `user`
+   context has no rejection file because `toggleArticleBookmark` cannot fail.
+6. `Decisions.ts` — the decisions themselves, named for the command rather than
+   the event: `toggleArticleBookmark` records `ArticleBookmarked`.
 
 ## Boundary
 
-Production code may depend only on Effect and the aggregate/decision contracts
-from `@es-ts-example/event-sourcing`. Adventure, counter, experience, and identity are
-isolated contexts. Payments deliberately references adventure and experience
-facts; do not turn that exception into general cross-context coupling.
+Production code may depend only on Effect and the aggregate and decision
+contracts from `@es-ts-example/event-sourcing`. The two contexts are isolated:
+neither imports the other. External SDKs, HTTP calls, browser APIs, runtime
+configuration, and persistence belong outside this package.
 
-External SDKs, HTTP calls, browser APIs, runtime configuration, and persistence
-concerns belong outside this package.
+`index.ts` re-exports both contexts and the `DomainEvent` union that the
+application layer persists. That union is the one place the contexts meet.
 
-Shared types hold stable cross-context concepts such as identifiers, revision
-content, party-size limits, media references, and place references. Media
-references identify content; media bytes belong in application storage.
+## The Reducer Must Survive Logs It Did Not Write
 
-## Experience Blocks
+A decision only ever sees state that its own rules produced. A reducer does not
+get that guarantee: it replays whatever is in the stream, including events
+written by an older version of the code, hand-edited files, or another context's
+stream read by mistake.
 
-Creator steps are ordered canvases. A step owns its `blocks` array; do not add a
-second completion-item container.
+So `applyCounterEvent` branches on state first and lets each state name what it
+accepts. `CounterNotCreated` ignores everything but `CounterCreated`, so replay
+cannot fabricate a counter that was never created. `DisabledCounter` ignores
+every event, so "disable freezes the counter" holds during replay and not only
+at decision time. The value is clamped rather than validated, because
+`ActiveCounter.make` throws outside `0..5` and a reducer is the worst possible
+place to throw.
 
-The eight explicit variants are narrative, static place, media, place check-in,
-manual check, secret code, multiple choice, and photo proof. The last five are
-completable and carry `AnyoneCompletes` or `EveryoneCompletes` criteria. Derive
-completable blocks from each step instead of storing a second collection.
+The property tests in `test/property` generate arbitrary logs, in orders the
+decisions would never produce, and assert exactly these three invariants.
 
-Future integrations should add explicit block variants with clear behavior. Do
-not smuggle provider-specific data through a generic `IntegrationBlock` payload.
+## Rejections Are Tagged, Not Generic
 
-## Place References
-
-`PinDrop` stores creator-authored name and coordinates. `ProviderPlace` stores a
-creator label and provider reference. Opening hours, provider photos, and other
-volatile business data are resolved outside the domain. Domain decisions may
-require a place reference but must not depend on live provider metadata.
-
-## Rejections
-
-Domain decisions return precise tagged invariants. Callers branch on the tag;
-do not replace it with a generic command failure.
+Decisions return precise tagged rejections such as `CounterIsDisabled` and
+`CounterMaximumReached`. Callers branch on the tag. Do not collapse them into a
+single command-failed error: the application layer maps each tag to its own RPC
+failure and the web layer maps each failure to its own message.
 
 ## Tests
 
-Use unit tests for decision examples, property tests for broad invariants, and
-Effect BDD for product behavior. Product features live in `features/product`;
-domain step definitions live in `packages/domain/test/e2e/steps`.
-
-The domain `e2e` script selects browse, counter, navigation, creator, adventure,
-and party features explicitly. Payment feature files are not wired into that
-script yet.
+Unit tests carry decision examples, property tests carry broad invariants, and
+Effect BDD carries product behavior. The feature file lives in
+`features/product/counter/counter.feature`; the step definitions that bind it to
+these decisions live in `test/e2e/steps`.

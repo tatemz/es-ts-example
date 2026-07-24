@@ -1,8 +1,7 @@
-import type * as Application from "@es-ts-example/application";
+import * as Application from "@es-ts-example/application";
 import * as Effect from "effect/Effect";
-import { makeArticlesPageModel } from "../factories/ArticlesPage.factory.ts";
-import type { ArticlesPageModel } from "../models/ArticlesPage.model.ts";
-import { ArticleQueryRpcClient } from "../rpcClients.ts";
+import { makeArticlesPageModel } from "../factories/pages/ArticlesPage.factory.ts";
+import type { ArticlesPageModel } from "../models/pages/ArticlesPage.model.ts";
 
 export type GetArticlesPageInput = {
   readonly error?: string;
@@ -12,9 +11,9 @@ const loggedInUserId = "FooBar" as Application.UserId;
 
 export const getArticlesPageController = (
   input: GetArticlesPageInput,
-): Effect.Effect<ArticlesPageModel, unknown, ArticleQueryRpcClient> =>
+): Effect.Effect<ArticlesPageModel, Application.UserQueryError, Application.UserQueryClient> =>
   Effect.gen(function* () {
-    const queries = yield* ArticleQueryRpcClient;
+    const queries = yield* Application.UserQueryClient;
     const list = yield* queries.ListArticles({
       _tag: "ListArticles",
       userId: loggedInUserId,

@@ -10,11 +10,11 @@ import { postCounterCommandController } from "./controllers/postCounterCommand.c
 import { postCreateCounterController } from "./controllers/postCreateCounter.controller.ts";
 import { postToggleBookmarkController } from "./controllers/postToggleBookmark.controller.ts";
 import { renderHtml } from "./mvc/html.ts";
-import type { ArticlesPageModel } from "./models/ArticlesPage.model.ts";
-import type { CounterPageModel } from "./models/CounterPage.model.ts";
+import type { ArticlesPageModel } from "./models/pages/ArticlesPage.model.ts";
+import type { CounterPageModel } from "./models/pages/CounterPage.model.ts";
 import { webActions, webRoutes } from "./routes.ts";
-import { ArticlesPageView } from "./views/wayfinder/ArticlesPage.view.tsx";
-import { CounterPageView } from "./views/wayfinder/CounterPage.view.tsx";
+import { ArticlesPageView } from "./views/pages/ArticlesPage.view.tsx";
+import { CounterPageView } from "./views/pages/CounterPage.view.tsx";
 
 const HomeQuery = Schema.Struct({
   error: Schema.optionalKey(Schema.String),

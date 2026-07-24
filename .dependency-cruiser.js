@@ -74,8 +74,7 @@ const config = {
         pathNot: [
           "\\.model\\.ts$",
           "\\.view\\.tsx$",
-          "^packages/web/src/views/wayfinder/.+\\.support\\.tsx$",
-          "^packages/web/src/views/view\\.ts$",
+          "^packages/web/src/views/htmlHelpers\\.ts$",
           "^packages/web/src/mvc/",
         ],
       },
@@ -105,13 +104,14 @@ const config = {
       to: { path: "\\.view\\.tsx$" },
     },
     {
-      name: "web-ui-does-not-import-features",
+      name: "web-controls-do-not-import-pages",
       severity: "error",
-      comment: "UI primitives stay feature-agnostic; feature needs flow in through models.",
+      comment:
+        "Controls are reusable and feature-agnostic; page-specific needs flow in through their models.",
       from: {
-        path: "^packages/web/src/(?:models|factories|views/wayfinder)/EsTsExample",
+        path: "^packages/web/src/(?:models|factories|views)/controls/",
       },
-      to: { path: "^packages/web/src/(?:models|factories|views|controllers)/Counter" },
+      to: { path: "^packages/web/src/(?:(?:models|factories|views)/pages/|controllers/)" },
     },
     {
       name: "web-does-not-import-domain-or-event-sourcing",

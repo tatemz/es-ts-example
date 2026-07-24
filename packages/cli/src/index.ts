@@ -39,7 +39,7 @@ const usageLines: ReadonlyArray<string> = [
 
 export const usage: string = Arr.join(usageLines, "\n");
 
-const verbTags: Readonly<Record<string, CommandVerb>> = {
+const verbsByArgument: Readonly<Record<string, CommandVerb>> = {
   create: "Create",
   increment: "Increment",
   decrement: "Decrement",
@@ -48,11 +48,11 @@ const verbTags: Readonly<Record<string, CommandVerb>> = {
 
 const helpAction: CliAction = { _tag: "Help", message: usage };
 
-const hasValue = (value: string | undefined): value is string =>
+const isNonEmpty = (value: string | undefined): value is string =>
   value !== undefined && value !== "";
 
 const commandAction = (verb: CommandVerb, rawId: string | undefined): CliAction =>
-  !hasValue(rawId)
+  !isNonEmpty(rawId)
     ? helpAction
     : { _tag: "Command", verb, counterId: Application.CounterId.make(rawId) };
 
@@ -60,7 +60,7 @@ const toggleBookmarkAction = (
   rawUserId: string | undefined,
   rawArticleId: string | undefined,
 ): CliAction =>
-  !hasValue(rawUserId) || !hasValue(rawArticleId)
+  !isNonEmpty(rawUserId) || !isNonEmpty(rawArticleId)
     ? helpAction
     : {
         _tag: "ToggleBookmark",
@@ -69,7 +69,7 @@ const toggleBookmarkAction = (
       };
 
 const listArticlesAction = (rawUserId: string | undefined): CliAction =>
-  !hasValue(rawUserId)
+  !isNonEmpty(rawUserId)
     ? helpAction
     : { _tag: "ListArticles", userId: Application.UserId.make(rawUserId) };
 
@@ -86,7 +86,7 @@ export const parseArguments = (argv: ReadonlyArray<string>): CliAction => {
   }
   return Fn.pipe(
     Option.fromUndefinedOr(verb),
-    Option.flatMap((name) => Rec.get(verbTags, name)),
+    Option.flatMap((name) => Rec.get(verbsByArgument, name)),
     Option.match({
       onNone: () => helpAction,
       onSome: (resolved) => commandAction(resolved, rawId),
@@ -94,11 +94,13 @@ export const parseArguments = (argv: ReadonlyArray<string>): CliAction => {
   );
 };
 
-export const renderCounter = (counter: Application.CounterRead): string =>
-  `#${counter.counterId} value=${counter.value} status=${counter.status} version=${counter.version}`;
+export const renderCounter = (counter: Application.CounterSummary): string =>
+  `#${counter.counterId} value=${counter.value} status=${
+    counter._tag === "DisabledCounterSummary" ? "disabled" : "active"
+  } version=${counter.version}`;
 
-export const renderReceipt = (counter: Application.CounterRead): string =>
-  `Applied ${renderCounter(counter)}`;
+export const renderReceipt = (receipt: Application.CounterCommandReceipt): string =>
+  `Applied #${receipt.counterId} version=${receipt.version}`;
 
 export const renderList = (list: Application.CounterList): ReadonlyArray<string> =>
   Arr.match(list.counters, {
@@ -118,7 +120,7 @@ export const renderArticleList = (list: Application.ArticleList): ReadonlyArray<
 export const renderBookmarkReceipt = (receipt: Application.UserBookmarkReceipt): string =>
   `Toggled bookmarks for ${receipt.userId} (${Arr.length(receipt.bookmarkedArticleIds)})`;
 
-const dispatch = (
+const sendCounterCommand = (
   commands: Application.CounterCommandClient,
   verb: CommandVerb,
   counterId: Application.CounterId,
@@ -156,7 +158,7 @@ const commandLines = (
 > =>
   Effect.gen(function* () {
     const commands = yield* Application.CounterCommandClient;
-    const receipt = yield* dispatch(commands, verb, counterId);
+    const receipt = yield* sendCounterCommand(commands, verb, counterId);
     const listing = yield* listLines();
     return Arr.prepend(listing, renderReceipt(receipt));
   });

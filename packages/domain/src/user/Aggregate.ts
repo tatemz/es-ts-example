@@ -10,24 +10,24 @@ export type UserAggregate = EventSourcingAggregate.Aggregate<
   Identifiers.UserId
 >;
 
-const userAggregateFactory = EventSourcingAggregate.makeAggregateFactory<
+const userAggregate = EventSourcingAggregate.defineAggregate<
   State.UserState,
   Events.UserEvent,
   Identifiers.UserId
 >({
   initialState: State.initialUserState,
-  applyEvent: Reducer.applyUserEvent,
+  reducer: Reducer.applyUserEvent,
 });
 
-export const emptyUser = (userId: Identifiers.UserId): UserAggregate =>
-  userAggregateFactory.empty(userId);
+/** A user with no history yet. Nothing has happened to them. */
+export const newUser = (userId: Identifiers.UserId): UserAggregate => userAggregate.empty(userId);
 
 export const recordUserEvent: {
   (event: Events.UserEvent): (aggregate: UserAggregate) => UserAggregate;
   (aggregate: UserAggregate, event: Events.UserEvent): UserAggregate;
-} = userAggregateFactory.recordEvent;
+} = userAggregate.recordEvent;
 
-export const reconstituteUser =
+export const replayUser =
   (userId: Identifiers.UserId) =>
   (events: ReadonlyArray<Events.UserEvent>): UserAggregate =>
-    userAggregateFactory.reconstitute(userId)(events);
+    userAggregate.replay(userId)(events);

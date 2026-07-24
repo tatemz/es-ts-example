@@ -1,7 +1,7 @@
 export * from "./Aggregate.ts";
 export * from "./Events.ts";
 export * from "./Identifiers.ts";
-export * from "./Methods.ts";
+export * from "./Decisions.ts";
 export {
   CounterAlreadyExists,
   counterAlreadyExists,
@@ -17,6 +17,6 @@ export {
   type DecrementCounterError,
   type DisableCounterError,
   type IncrementCounterError,
-} from "./Invariants.ts";
+} from "./Rejections.ts";
 export * from "./Reducer.ts";
 export * from "./State.ts";

@@ -25,7 +25,7 @@ const initialState: CounterTotalsState = {
   totalDecremented: 0,
 };
 
-const applyEvent = (state: CounterTotalsState, event: ProjectionEvent): CounterTotalsState =>
+const countTotals = (state: CounterTotalsState, event: ProjectionEvent): CounterTotalsState =>
   Match.valueTags(event, {
     Incremented: (incremented) => ({
       ...state,
@@ -37,7 +37,7 @@ const applyEvent = (state: CounterTotalsState, event: ProjectionEvent): CounterT
     }),
   });
 
-const selectEvent = (event: AnyEvent): Option.Option<ProjectionEvent> =>
+const selectCounterEvent = (event: AnyEvent): Option.Option<ProjectionEvent> =>
   Schema.is(ProjectionEventSchema)(event) ? Option.some(event) : Option.none();
 
 const projection = EventSourcing.makeProjection<
@@ -48,19 +48,19 @@ const projection = EventSourcing.makeProjection<
 >({
   projectionId: "counter-totals",
   initialState,
-  applyEvent,
-  selectEvent,
+  reducer: countTotals,
+  matchesProjection: selectCounterEvent,
 });
 
 describe("projection primitives", () => {
-  test("initialEnvelope captures the initial state and sequence 0", () => {
-    expect(EventSourcing.initialEnvelope(initialState)).toEqual({
+  test("initialCheckpoint captures the initial state and sequence 0", () => {
+    expect(EventSourcing.initialCheckpoint(initialState)).toEqual({
       state: initialState,
       lastEventStoreSequenceNumber: 0,
     });
   });
 
-  test("foldProjection ignores unselected events and folds the rest", () => {
+  test("replayProjection ignores unselected events and folds the rest", () => {
     const events: ReadonlyArray<AnyEvent> = [
       { _tag: "Incremented", by: 3 },
       { _tag: "OtherDomainEvent", note: "ignored" },
@@ -68,7 +68,7 @@ describe("projection primitives", () => {
       { _tag: "Incremented", by: 4 },
     ];
 
-    expect(EventSourcing.foldProjection(projection)(events)).toEqual({
+    expect(EventSourcing.replayProjection(projection)(events)).toEqual({
       totalIncremented: 7,
       totalDecremented: 1,
     });
@@ -77,14 +77,14 @@ describe("projection primitives", () => {
   test("makeProjection round-trips its options", () => {
     expect(projection.projectionId).toBe("counter-totals");
     expect(projection.initialState).toEqual(initialState);
-    expect(projection.applyEvent(initialState, { _tag: "Incremented", by: 2 })).toEqual({
+    expect(projection.reducer(initialState, { _tag: "Incremented", by: 2 })).toEqual({
       totalIncremented: 2,
       totalDecremented: 0,
     });
-    expect(projection.selectEvent({ _tag: "Incremented", by: 1 })).toEqual(
+    expect(projection.matchesProjection({ _tag: "Incremented", by: 1 })).toEqual(
       Option.some({ _tag: "Incremented", by: 1 }),
     );
-    expect(projection.selectEvent({ _tag: "OtherDomainEvent", note: "skip" })).toEqual(
+    expect(projection.matchesProjection({ _tag: "OtherDomainEvent", note: "skip" })).toEqual(
       Option.none(),
     );
   });
@@ -103,14 +103,15 @@ const Decremented = Schema.TaggedStruct("Decremented", {
 });
 const ProjectionEventSchema = Schema.Union([Incremented, Decremented]);
 
-const ProjectionEnvelopeSchema: Schema.Codec<EventSourcing.ProjectionEnvelope<CounterTotalsState>> =
-  Schema.Struct({
-    state: StateSchema,
-    lastEventStoreSequenceNumber: Schema.Number,
-  });
+const ProjectionEnvelopeSchema: Schema.Codec<
+  EventSourcing.ProjectionCheckpoint<CounterTotalsState>
+> = Schema.Struct({
+  state: StateSchema,
+  lastEventStoreSequenceNumber: Schema.Number,
+});
 
 const VersionedEnvelopeSchema: Schema.Codec<
-  EventSourcing.Versioned<EventSourcing.ProjectionEnvelope<CounterTotalsState>>
+  EventSourcing.Versioned<EventSourcing.ProjectionCheckpoint<CounterTotalsState>>
 > = Schema.Struct({
   value: ProjectionEnvelopeSchema,
   version: Schema.Number,
@@ -158,7 +159,7 @@ describe("projection store", () => {
     Effect.gen(function* () {
       const schemaStore = makeTestSchemaStore(VersionedEnvelopeSchema);
       const store = EventSourcing.makeProjectionStore({ schemaStore, initialState });
-      const envelope: EventSourcing.ProjectionEnvelope<CounterTotalsState> = {
+      const envelope: EventSourcing.ProjectionCheckpoint<CounterTotalsState> = {
         state: { totalIncremented: 4, totalDecremented: 1 },
         lastEventStoreSequenceNumber: 7,
       };
@@ -202,7 +203,7 @@ describe("projection store", () => {
     Effect.gen(function* () {
       const schemaStore = makeTestSchemaStore(VersionedEnvelopeSchema);
       const store = EventSourcing.makeProjectionStore({ schemaStore, initialState });
-      const envelope: EventSourcing.ProjectionEnvelope<CounterTotalsState> = {
+      const envelope: EventSourcing.ProjectionCheckpoint<CounterTotalsState> = {
         state: initialState,
         lastEventStoreSequenceNumber: 0,
       };

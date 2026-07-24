@@ -5,31 +5,22 @@ import { createRule } from "../shared/rule.mjs";
 
 export const testAssertionBoundariesRuleName = "test-assertion-boundaries";
 
+/**
+ * Files written before the one-assertion-boundary rule existed. The list only
+ * shrinks: a new test must group its expectations into a single boundary.
+ */
 const ratchet = {
   paths: [
     "packages/application/test/unit/counter.test.ts",
     "packages/application/test/unit/index.test.ts",
-    "packages/domain/test/unit/adventure.test.ts",
     "packages/domain/test/unit/counter.test.ts",
-    "packages/domain/test/unit/experience.test.ts",
     "packages/event-sourcing/test/unit/index.test.ts",
     "packages/event-sourcing/test/unit/projection.test.ts",
     "packages/test-support/test/unit/index.test.ts",
-    "packages/web/test/e2e/creator-studio.e2e.ts",
-    "packages/web/test/e2e/navigation.e2e.ts",
-    "packages/web/test/unit/counter.test.ts",
     "packages/web/test/unit/html.test.ts",
-    "packages/web/test/unit/identity.test.ts",
-    "packages/web/test/unit/payments.test.ts",
     "packages/web/test/unit/web-infrastructure.test.ts",
   ],
-  patterns: [
-    /^packages\/web\/test\/unit\/adventure\/.+\.test\.ts$/,
-    /^packages\/web\/test\/unit\/browse\/.+\.test\.ts$/,
-    /^packages\/web\/test\/unit\/creator\/.+\.test\.ts$/,
-    /^packages\/web\/test\/unit\/party\/.+\.test\.ts$/,
-    /^packages\/web\/test\/unit\/ui\/.+\.test\.ts$/,
-  ],
+  patterns: [],
 };
 
 const isIdentifier = (node, name) => node?.type === "Identifier" && node.name === name;

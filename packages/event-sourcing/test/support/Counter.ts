@@ -42,19 +42,15 @@ export const makeCounterRepository = (store: EventSourcing.EventStore<CounterEve
   EventSourcing.makeAggregateRepository({
     store,
     initialState: 0,
-    applyEvent: applyCounterEvent,
+    reducer: applyCounterEvent,
   });
 
-export const applyNewCounterEvent =
+export const recordNewCounterEvent =
   (event: CounterEvent) =>
   <Id extends string>(
     aggregate: EventSourcing.Aggregate<number, CounterEvent, Id>,
   ): EventSourcing.Aggregate<number, CounterEvent, Id> =>
-    EventSourcing.applyEvent({
-      applyEvent: applyCounterEvent,
-      event,
-      isNew: true,
-    })(aggregate);
+    EventSourcing.recordEvent({ reducer: applyCounterEvent, event })(aggregate);
 
 export const decideIncrement = (status: CounterStatus, by: number): CounterDecision =>
   status === "open"

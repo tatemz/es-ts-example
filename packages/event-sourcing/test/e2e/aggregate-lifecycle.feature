@@ -16,7 +16,7 @@ Feature: Event-sourced aggregate lifecycle contract
     @audit-unreviewed @approval-unapproved @priority-p1-core
     Scenario: History rebuilds current aggregate state
       Given the counter history contains increments of 2 and 3
-      When the aggregate is reconstituted from its history
+      When the aggregate is replayed from its history
       Then the counter state is 5
       And the aggregate version is 2
       And the aggregate has no unsaved facts
@@ -24,14 +24,14 @@ Feature: Event-sourced aggregate lifecycle contract
     @audit-unreviewed @approval-unapproved @priority-p0-critical
     Scenario: History is replayed in recorded order
       Given the counter history contains an increment of 2, a reset, and an increment of 3
-      When the aggregate is reconstituted from its history
+      When the aggregate is replayed from its history
       Then the counter state is 3
       And the aggregate version is 3
       And the aggregate has no unsaved facts
 
     @audit-unreviewed @approval-unapproved @priority-p1-core
     Scenario: One new change is tracked as pending
-      Given the counter has been reconstituted at version 2
+      Given the counter has been replayed at version 2
       When the counter is incremented by 4
       Then the counter state is 9
       And the aggregate version is 3
@@ -41,7 +41,7 @@ Feature: Event-sourced aggregate lifecycle contract
 
     @audit-unreviewed @approval-unapproved @priority-p0-critical
     Scenario: Multiple new changes are tracked in order
-      Given the counter has been reconstituted at version 2
+      Given the counter has been replayed at version 2
       When the counter is incremented by 4
       And the counter is incremented by 1
       Then the counter state is 10

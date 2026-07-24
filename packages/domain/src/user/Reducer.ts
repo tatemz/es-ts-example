@@ -35,4 +35,8 @@ export const applyUserEvent = (state: State.UserState, event: Events.UserEvent):
       }),
   });
 
-export const foldUser = EventSourcingAggregate.fold(State.initialUserState, applyUserEvent);
+/** The state a log of user events adds up to, with no aggregate wrapper. */
+export const userStateFrom = EventSourcingAggregate.replayInto(
+  State.initialUserState,
+  applyUserEvent,
+);

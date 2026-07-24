@@ -5,12 +5,11 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { getArticlesPageController } from "../../../src/controllers/getArticlesPage.controller.ts";
 import { postToggleBookmarkController } from "../../../src/controllers/postToggleBookmark.controller.ts";
-import type { ArticlesPageModel } from "../../../src/models/ArticlesPage.model.ts";
-import { ArticleQueryRpcClient, BookmarkCommandRpcClient } from "../../../src/rpcClients.ts";
+import type { ArticlesPageModel } from "../../../src/models/pages/ArticlesPage.model.ts";
 
 const localClients = Layer.mergeAll(
-  ArticleQueryRpcClient.local,
-  BookmarkCommandRpcClient.local,
+  Application.UserQueryClientLive,
+  Application.UserCommandClientLive,
 ).pipe(Layer.provide(Application.DomainEventStore.inMemory));
 
 const firstArticleRow = (page: ArticlesPageModel) =>
@@ -47,8 +46,8 @@ testEffect("articles page combines the catalog with FooBar's bookmark projection
       toggled: "/articles",
       bookmarkedTag: "ArticleSaved",
       bookmarkedButton: "Remove bookmark",
-      failedAlert: "EsTsExampleAlertVisible",
-      unknownAlert: "EsTsExampleAlertHidden",
+      failedAlert: "AlertVisible",
+      unknownAlert: "AlertHidden",
       invalid: "/articles?error=command-failed",
     });
   }).pipe(Effect.provide(localClients)),

@@ -7,18 +7,6 @@ export const testFixtureBoundariesRuleName = "test-fixture-boundaries";
 const ratchet = {
   paths: [
     "packages/application/test/unit/index.test.ts",
-    "packages/web/test/unit/adventure/adventure-1.test.ts",
-    "packages/web/test/unit/adventure/adventure-2.test.ts",
-    "packages/web/test/unit/adventure/adventure-6.test.ts",
-    "packages/web/test/unit/browse/browse-1.test.ts",
-    "packages/web/test/unit/browse/browse-2.test.ts",
-    "packages/web/test/unit/browse/browse-3.test.ts",
-    "packages/web/test/unit/browse/browse-4.test.ts",
-    "packages/web/test/unit/creator/creator-1.test.ts",
-    "packages/web/test/unit/creator/creator-4.test.ts",
-    "packages/web/test/unit/creator/creator-5.test.ts",
-    "packages/web/test/unit/party/party-1.test.ts",
-    "packages/web/test/unit/party/party-2.test.ts",
     "packages/web/test/unit/web-infrastructure.test.ts",
   ],
 };

@@ -1,7 +1,6 @@
 import * as Application from "@es-ts-example/application";
 import * as Effect from "effect/Effect";
 import * as Str from "effect/String";
-import { CommandRpcClient } from "../rpcClients.ts";
 import { counterHomeHref } from "../routes.ts";
 
 export type PostCreateCounterInput = {
@@ -10,7 +9,7 @@ export type PostCreateCounterInput = {
 
 export const postCreateCounterController = (
   input: PostCreateCounterInput,
-): Effect.Effect<string, never, CommandRpcClient> => {
+): Effect.Effect<string, never, Application.CounterCommandClient> => {
   const trimmed = Str.trim(input.counterId);
 
   if (trimmed === "") {
@@ -18,7 +17,7 @@ export const postCreateCounterController = (
   }
 
   return Effect.gen(function* () {
-    const commands = yield* CommandRpcClient;
+    const commands = yield* Application.CounterCommandClient;
     yield* commands.CreateCounter({
       _tag: "CreateCounter",
       counterId: Application.CounterId.make(trimmed),

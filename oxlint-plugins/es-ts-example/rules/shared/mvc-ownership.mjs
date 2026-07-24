@@ -55,7 +55,7 @@ export const viewOwnershipFromFilename = (filename) =>
   stemOwnership(stemFromViewFilename(filename));
 
 export const modelStemFromImportSource = (source) => {
-  const match = /^\.\.\/\.\.\/models\/(.+)\.model\.ts$/.exec(source);
+  const match = /^\.\.\/\.\.\/models\/[^/]+\/(.+)\.model\.ts$/.exec(source);
   return match === null ? Option.none() : Fn.pipe(match, Arr.get(1));
 };
 

@@ -19,9 +19,8 @@ export const effectFirstCode = sourceRule({
     /\bnew\s+(?:Date|URL|URLSearchParams)\b/,
     /\bDate\.(?:now|parse|UTC)\s*\(/,
   ],
+  // The JSX runtime is the one module that has to speak the host's language.
   shouldRun: (filename) =>
     (packageProductionPath(filename) || webSourcePath(filename)) &&
-    !/\/packages\/web\/src\/(?:identityGenerators|mvc\/jsx-runtime)\.ts$/.test(filename) &&
-    !/\/packages\/web2\/src\/(?:demo|catalog|server|mvc\/.+)\.ts$/.test(filename) &&
-    !/\/packages\/web2\/bin\//.test(filename),
+    !/\/packages\/web\/src\/mvc\/jsx-runtime\.ts$/.test(filename),
 });

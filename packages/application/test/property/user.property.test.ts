@@ -4,7 +4,7 @@ import { propertyTestParameters } from "@es-ts-example/test-support/PropertyTest
 import * as FastCheck from "effect/testing/FastCheck";
 import {
   applyBookmarkEvent,
-  bookmarkKey,
+  bookmarkProjectionKey,
   initialBookmarkProjectionState,
 } from "../../src/index.ts";
 
@@ -17,9 +17,12 @@ test("property: bookmark keys distinguish either component", () => {
       const secondArticle = `b${suffix}`;
 
       expect({
-        changedUser: bookmarkKey(firstUser, firstArticle) !== bookmarkKey(secondUser, firstArticle),
+        changedUser:
+          bookmarkProjectionKey(firstUser, firstArticle) !==
+          bookmarkProjectionKey(secondUser, firstArticle),
         changedArticle:
-          bookmarkKey(firstUser, firstArticle) !== bookmarkKey(firstUser, secondArticle),
+          bookmarkProjectionKey(firstUser, firstArticle) !==
+          bookmarkProjectionKey(firstUser, secondArticle),
       }).toEqual({
         changedUser: true,
         changedArticle: true,
@@ -39,7 +42,7 @@ test("property: the latest bookmark fact controls the projected boolean", () => 
         const articleId = Domain.ArticleId.make(rawArticleId);
         const bookmarked = Domain.ArticleBookmarked.make({ userId, articleId });
         const removed = Domain.ArticleBookmarkRemoved.make({ userId, articleId });
-        const key = bookmarkKey(userId, articleId);
+        const key = bookmarkProjectionKey(userId, articleId);
 
         expect({
           removedLast: applyBookmarkEvent(

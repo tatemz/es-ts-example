@@ -1,6 +1,5 @@
 import * as Application from "@es-ts-example/application";
 import * as Effect from "effect/Effect";
-import { CommandRpcClient } from "../rpcClients.ts";
 import { counterHomeHref } from "../routes.ts";
 
 export type PostCounterCommandInput = {
@@ -9,10 +8,10 @@ export type PostCounterCommandInput = {
 };
 
 const runVerb = (
-  commands: CommandRpcClient,
+  commands: Application.CounterCommandClient,
   verb: string,
   counterId: Application.CounterId,
-): Effect.Effect<Application.CounterCommandReceipt, unknown> => {
+): Effect.Effect<Application.CounterCommandReceipt, Application.CounterCommandError | Error> => {
   if (verb === "increment") {
     return commands.IncrementCounter({ _tag: "IncrementCounter", counterId });
   }
@@ -27,9 +26,9 @@ const runVerb = (
 
 export const postCounterCommandController = (
   input: PostCounterCommandInput,
-): Effect.Effect<string, never, CommandRpcClient> =>
+): Effect.Effect<string, never, Application.CounterCommandClient> =>
   Effect.gen(function* () {
-    const commands = yield* CommandRpcClient;
+    const commands = yield* Application.CounterCommandClient;
     yield* runVerb(commands, input.verb, Application.CounterId.make(input.counterId));
     return counterHomeHref({});
   }).pipe(Effect.catch(() => Effect.succeed(counterHomeHref({ error: "command-failed" }))));

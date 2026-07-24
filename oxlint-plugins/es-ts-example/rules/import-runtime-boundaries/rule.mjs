@@ -19,7 +19,6 @@ const runtimeTestSupportRatchet = {
     "packages/application/bin/main.ts",
     "packages/cli/bin/main.ts",
     "packages/event-sourcing/bin/main.ts",
-    "packages/scratchpad/bin/main.ts",
   ],
 };
 
@@ -30,18 +29,15 @@ const productionSeedBoundaryPattern =
   /\/packages\/[^/]+\/src\/.*(?:controller|server|rpc)[^/]*\.(?:ts|tsx)$/;
 const seedImportPattern = /from\s+["'][^"']*(?:Seed|seed|Fixture|fixture)[^"']*["']/;
 
+/**
+ * The boundary modules themselves: routes own URL literals, the server owns the
+ * request, the JSX runtime owns the host, and `bin/` owns process config.
+ */
 const shouldRunRuntimeBoundary = (filename) =>
   (packageProductionPath(filename) || webSourcePath(filename)) &&
   !/\/packages\/cli\/bin\//.test(filename) &&
-  !/\/packages\/application\/src\/readModels\/media\.ts$/.test(filename) &&
-  !/\/packages\/web\/src\/(?:routes|server|identityGenerators|mvc\/jsx-runtime)\.ts$/.test(
-    filename,
-  ) &&
-  !/\/packages\/web\/bin\//.test(filename) &&
-  !/\/packages\/web2\/src\/(?:paths|server|demo|catalog|mvc\/.+)\.ts$/.test(filename) &&
-  !/\/packages\/web2\/src\/create\/(?:draftStore|guidedCreate\.routes)\.ts$/.test(filename) &&
-  !/\/packages\/web2\/src\/.*\.view\.tsx$/.test(filename) &&
-  !/\/packages\/web2\/bin\//.test(filename);
+  !/\/packages\/web\/src\/(?:routes|server|mvc\/jsx-runtime)\.ts$/.test(filename) &&
+  !/\/packages\/web\/bin\//.test(filename);
 
 const violatesRuntimeBoundary = (filename, text) =>
   shouldRunRuntimeBoundary(filename) &&

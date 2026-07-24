@@ -18,5 +18,5 @@ export const makeCounterRepository = (
   Repository.makeAggregateRepository({
     store,
     initialState: Domain.initialCounterState,
-    applyEvent: Domain.applyCounterEvent,
+    reducer: Domain.applyCounterEvent,
   });

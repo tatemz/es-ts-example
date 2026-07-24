@@ -1,14 +1,13 @@
 import { isRealFilename } from "../shared/filename.mjs";
 import {
-  webDirectViewPath,
   webMvcInternalBarrelPath,
+  webMvcLayerPattern,
   webMvcSliceInLane,
   webMvcSliceLane,
   webMvcSliceRole,
-  webNestedThemeViewPath,
+  webNestedViewPath,
   webSourcePath,
-  webUnknownThemeViewPath,
-  webViewThemePattern,
+  webUnlayeredViewPath,
 } from "../shared/paths.mjs";
 
 export const mvcFilePlacementRuleName = "mvc-file-placement";
@@ -25,18 +24,18 @@ export const mvcFilePlacement = {
     type: "problem",
     docs: {
       description:
-        "Require web MVC role files to live directly in their role lanes under packages/web/src, with themed views in registered layout folders.",
+        "Require web MVC role files to live in their role lane under packages/web/src, split into a pages or controls layer.",
     },
     messages: {
       internalBarrel:
         "Internal MVC barrel files are banned; import concrete model, factory, controller, or view files.",
-      wrongPlacement: "Move this {{role}} file into `{{expectedLane}}` with no nested folders.",
-      directViewPlacement:
-        "Move this view into `src/views/{{themePattern}}/<Stem>.view.tsx` instead of `src/views/`.",
-      unknownViewTheme:
-        "Move this view into a registered layout theme folder under `src/views/{{themePattern}}/`.",
+      wrongPlacement: "Move this {{role}} file into `{{expectedLane}}` with no deeper nesting.",
+      unlayeredViewPlacement:
+        "Move this view into `src/views/{{layerPattern}}/<Stem>.view.tsx` instead of `src/views/`.",
+      unknownViewLayer:
+        "Move this view into a known layer folder under `src/views/{{layerPattern}}/`.",
       nestedViewPlacement:
-        "Move this view into `src/views/{{themePattern}}/<Stem>.view.tsx` with no deeper nesting.",
+        "Move this view into `src/views/{{layerPattern}}/<Stem>.view.tsx` with no deeper nesting.",
     },
     schema: [],
   },
@@ -61,21 +60,18 @@ export const mvcFilePlacement = {
     }
 
     if (role === "views") {
-      const themePattern = webViewThemePattern;
-      const messageId = webNestedThemeViewPath(filename)
+      const messageId = webNestedViewPath(filename)
         ? "nestedViewPlacement"
-        : webUnknownThemeViewPath(filename)
-          ? "unknownViewTheme"
-          : webDirectViewPath(filename)
-            ? "directViewPlacement"
-            : "unknownViewTheme";
+        : webUnlayeredViewPath(filename)
+          ? "unlayeredViewPlacement"
+          : "unknownViewLayer";
 
       return {
         Program(node) {
           context.report({
             node,
             messageId,
-            data: { themePattern },
+            data: { layerPattern: webMvcLayerPattern },
           });
         },
       };

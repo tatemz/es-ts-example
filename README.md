@@ -44,6 +44,12 @@ bun run start:cli -- articles FooBar
 The CLI and web app use the same event file. A bookmark from the CLI appears on
 the web page.
 
+## Make your first change
+
+[docs/first-change.md](docs/first-change.md) walks one new counter command from
+the domain out to the CLI and the web page, with the check to run after each
+step. Start there if you would rather learn this codebase by changing it.
+
 ## Event sourcing in one minute
 
 A normal application often stores only its latest state:
@@ -146,6 +152,9 @@ Its value shows whether the bookmark is active.
 
 The first value is `true` because the bookmark is active. The second value is
 `false` because the user removed that bookmark.
+
+Those are the general concepts. [docs/vocabulary.md](docs/vocabulary.md) records
+the names this codebase picked for them, and the few it knows are imperfect.
 
 ## The user bookmark domain
 

@@ -5,9 +5,14 @@ import * as Effect from "effect/Effect";
 import * as Fn from "effect/Function";
 import * as Rec from "effect/Record";
 import * as Stream from "effect/Stream";
-import { type CounterList, counterReadFromAggregate } from "../readModels.ts";
+import { type CounterList, counterSummaryOf } from "../readModels.ts";
 import type { CounterEventStore } from "../repository.ts";
 
+/**
+ * Each counter is an independent stream, so the list replays every stream on
+ * its own rather than folding one global projection. A group whose log never
+ * created its counter yields no summary and is dropped.
+ */
 export const makeListCountersHandler =
   (store: CounterEventStore) =>
   (): Effect.Effect<CounterList, EventStore.EventStorePersistenceFailure> =>
@@ -20,12 +25,13 @@ export const makeListCountersHandler =
           Arr.groupBy((record) => record.event.counterId),
           Rec.toEntries,
           Arr.map(([counterId, group]) =>
-            counterReadFromAggregate(
-              Domain.reconstituteCounter(Domain.CounterId.make(counterId))(
+            counterSummaryOf(
+              Domain.replayCounter(Domain.CounterId.make(counterId))(
                 Arr.map(group, (record) => record.event),
               ),
             ),
           ),
+          Arr.getSomes,
         ),
       })),
     );

@@ -2,7 +2,6 @@ import * as Arr from "effect/Array";
 import * as Fn from "effect/Function";
 import * as Order from "effect/Order";
 import * as Str from "effect/String";
-import { namedExceptionAllowsPath } from "./policy-exceptions.ts";
 import { trackedFiles } from "./policy-files.ts";
 import { failPolicy } from "./policy-output.ts";
 
@@ -41,20 +40,12 @@ const stringsOnly = (value: unknown): ReadonlyArray<string> =>
 const normalizedTestFile = (path: string): string =>
   `./${Fn.pipe(path, Str.replace(/^[^/]+\/[^/]+\//, ""))}`;
 
-// ponytail: a test file that only exercises mutation-excluded source is dead
-// weight in the per-mutant test set. The named exception lets it stay in
-// the normal unit gate while being omitted from bun.testFiles. A web mutation
-// run with zero Survived/NoCoverage is the proof the omission is sound.
-const mutationExcludedSourceTest = (path: string): boolean =>
-  namedExceptionAllowsPath("mutation-excluded-source-tests", path);
-
 const discoveredUnitTestFiles = (directory: string): ReadonlyArray<string> =>
   Fn.pipe(
     trackedFiles(),
     Arr.filter((path) => Fn.pipe(path, Str.startsWith(`${directory}/test/unit/`))),
     Arr.filter((path) => /\.(?:test\.ts|test\.tsx)$/.test(path)),
     Arr.filter((path) => !Fn.pipe(path, Str.includes("/support/"))),
-    Arr.filter((path) => !mutationExcludedSourceTest(path)),
     Arr.map(normalizedTestFile),
     Arr.sort(Order.String),
   );
@@ -80,13 +71,7 @@ const sourceMatchesExclude = (directory: string, exclude: string): boolean => {
 const strykerViolations = async (directory: string): Promise<ReadonlyArray<Violation>> => {
   const path = `${directory}/stryker.config.json`;
   const config = (await Bun.file(path).json()) as StrykerConfig;
-  const testFiles = Fn.pipe(
-    stringsOnly(config.bun?.testFiles),
-    Arr.filter(
-      (entry) => !mutationExcludedSourceTest(`${directory}/${Str.replace(/^\.\//, "")(entry)}`),
-    ),
-    Arr.sort(Order.String),
-  );
+  const testFiles = Fn.pipe(stringsOnly(config.bun?.testFiles), Arr.sort(Order.String));
   const discovered = discoveredUnitTestFiles(directory);
   const missing = setDifference(discovered, testFiles);
   const stale = setDifference(testFiles, discovered);

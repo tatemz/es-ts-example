@@ -5,7 +5,7 @@ import * as EventSourcing from "../../../src/index.ts";
 import {
   type CounterEvent,
   applyCounterEvent,
-  applyNewCounterEvent,
+  recordNewCounterEvent,
   counterClosed,
   created,
   decideIncrement,
@@ -137,7 +137,7 @@ const sharedRepository = (
   EventSourcing.makeAggregateRepository({
     store,
     initialState: 0,
-    applyEvent: applyCounterEvent,
+    reducer: applyCounterEvent,
     streamName: (id: string) => `${streamPrefix}:${id}`,
   });
 
@@ -216,18 +216,18 @@ const givenCounterHistoryContainsIncrementResetAndIncrement =
       }),
   );
 
-const givenCounterReconstitutedAtVersion2 =
-  Bdd.given`the counter has been reconstituted at version 2`((state: EventSourcingScenarioState) =>
+const givenCounterReplayedAtVersion2 = Bdd.given`the counter has been replayed at version 2`(
+  (state: EventSourcingScenarioState) =>
     Effect.succeed({
       ...state,
-      counterAggregate: EventSourcing.reconstituteAggregate({
+      counterAggregate: EventSourcing.replayAggregate({
         aggregateId: "counter-1",
         initialState: 0,
-        applyEvent: applyCounterEvent,
+        reducer: applyCounterEvent,
         events: [incremented(2), incremented(3)],
       }),
     }),
-  );
+);
 
 const whenNewCounterAggregateCreated = Bdd.when`a new counter aggregate is created`(
   (state: EventSourcingScenarioState) =>
@@ -240,25 +240,25 @@ const whenNewCounterAggregateCreated = Bdd.when`a new counter aggregate is creat
     }),
 );
 
-const whenAggregateReconstitutedFromHistory =
-  Bdd.when`the aggregate is reconstituted from its history`((state: EventSourcingScenarioState) =>
+const whenAggregateReplayedFromHistory = Bdd.when`the aggregate is replayed from its history`(
+  (state: EventSourcingScenarioState) =>
     Effect.succeed({
       ...state,
-      counterAggregate: EventSourcing.reconstituteAggregate({
+      counterAggregate: EventSourcing.replayAggregate({
         aggregateId: "counter-1",
         initialState: 0,
-        applyEvent: applyCounterEvent,
+        reducer: applyCounterEvent,
         events: state.counterHistory,
       }),
     }),
-  );
+);
 
 const whenCounterIncrementedBy4 = Bdd.when`the counter is incremented by 4`(
   (state: EventSourcingScenarioState) =>
     Effect.flatMap(expectCounterAggregate(state), (aggregate) =>
       Effect.succeed({
         ...state,
-        counterAggregate: applyNewCounterEvent(incremented(4))(aggregate),
+        counterAggregate: recordNewCounterEvent(incremented(4))(aggregate),
       }),
     ),
 );
@@ -268,7 +268,7 @@ const whenCounterIncrementedBy1 = Bdd.when`the counter is incremented by 1`(
     Effect.flatMap(expectCounterAggregate(state), (aggregate) =>
       Effect.succeed({
         ...state,
-        counterAggregate: applyNewCounterEvent(incremented(1))(aggregate),
+        counterAggregate: recordNewCounterEvent(incremented(1))(aggregate),
       }),
     ),
 );
@@ -344,7 +344,7 @@ const historyRebuildsCurrentAggregateState = Bdd.scenario(
 ).pipe(
   givenEventSourcedCounterAggregateExists,
   givenCounterHistoryContainsIncrementsOf2And3,
-  whenAggregateReconstitutedFromHistory,
+  whenAggregateReplayedFromHistory,
   thenCounterStateIs,
   thenAggregateVersionIs,
   thenAggregateHasNoUnsavedFacts,
@@ -353,7 +353,7 @@ const historyRebuildsCurrentAggregateState = Bdd.scenario(
 const historyIsReplayedInRecordedOrder = Bdd.scenario("History is replayed in recorded order").pipe(
   givenEventSourcedCounterAggregateExists,
   givenCounterHistoryContainsIncrementResetAndIncrement,
-  whenAggregateReconstitutedFromHistory,
+  whenAggregateReplayedFromHistory,
   thenCounterStateIs,
   thenAggregateVersionIs,
   thenAggregateHasNoUnsavedFacts,
@@ -361,7 +361,7 @@ const historyIsReplayedInRecordedOrder = Bdd.scenario("History is replayed in re
 
 const oneNewChangeIsTrackedAsPending = Bdd.scenario("One new change is tracked as pending").pipe(
   givenEventSourcedCounterAggregateExists,
-  givenCounterReconstitutedAtVersion2,
+  givenCounterReplayedAtVersion2,
   whenCounterIncrementedBy4,
   thenCounterStateIs,
   thenAggregateVersionIs,
@@ -372,7 +372,7 @@ const multipleNewChangesAreTrackedInOrder = Bdd.scenario(
   "Multiple new changes are tracked in order",
 ).pipe(
   givenEventSourcedCounterAggregateExists,
-  givenCounterReconstitutedAtVersion2,
+  givenCounterReplayedAtVersion2,
   whenCounterIncrementedBy4,
   whenCounterIncrementedBy1,
   thenCounterStateIs,
@@ -730,7 +730,7 @@ const givenFirstCopySavedIncrementOf1 =
         const repo = yield* expectRepository(state);
         const firstCopy = yield* requiredScenarioValue(state.firstCopy, "firstCopy");
 
-        yield* repo.save(applyNewCounterEvent(incremented(1))(firstCopy));
+        yield* repo.save(recordNewCounterEvent(incremented(1))(firstCopy));
 
         return state;
       }),
@@ -773,7 +773,7 @@ const whenLoadedCounterIncrementedBy3 = Bdd.when`the loaded counter is increment
     Effect.flatMap(expectLoadedCounter(state), (loaded) =>
       Effect.succeed({
         ...state,
-        loadedCounter: applyNewCounterEvent(incremented(3))(loaded),
+        loadedCounter: recordNewCounterEvent(incremented(3))(loaded),
       }),
     ),
 );
@@ -788,7 +788,7 @@ const whenSecondCopyTriesToSaveIncrementOf2 =
       const repo = yield* expectRepository(state);
       const secondCopy = yield* requiredScenarioValue(state.secondCopy, "secondCopy");
       const saveConflict = yield* repo
-        .save(applyNewCounterEvent(incremented(2))(secondCopy))
+        .save(recordNewCounterEvent(incremented(2))(secondCopy))
         .pipe(Effect.flip);
 
       return {
@@ -811,10 +811,10 @@ const whenBothRepositoriesSaveCounterNamedSharedId =
       );
 
       yield* firstRepository.save(
-        applyNewCounterEvent(incremented(1))(yield* firstRepository.load("shared-id")),
+        recordNewCounterEvent(incremented(1))(yield* firstRepository.load("shared-id")),
       );
       yield* secondRepository.save(
-        applyNewCounterEvent(incremented(2))(yield* secondRepository.load("shared-id")),
+        recordNewCounterEvent(incremented(2))(yield* secondRepository.load("shared-id")),
       );
 
       const firstLoadedCounter = yield* firstRepository.load("shared-id");

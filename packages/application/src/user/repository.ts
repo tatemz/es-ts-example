@@ -18,5 +18,5 @@ export const makeUserRepository = (
   Repository.makeAggregateRepository({
     store,
     initialState: Domain.initialUserState,
-    applyEvent: Domain.applyUserEvent,
+    reducer: Domain.applyUserEvent,
   });

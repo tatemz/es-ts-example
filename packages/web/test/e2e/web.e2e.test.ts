@@ -11,19 +11,13 @@ import { getCounterPageController } from "../../src/controllers/getCounterPage.c
 import { postCounterCommandController } from "../../src/controllers/postCounterCommand.controller.ts";
 import { postCreateCounterController } from "../../src/controllers/postCreateCounter.controller.ts";
 import { postToggleBookmarkController } from "../../src/controllers/postToggleBookmark.controller.ts";
-import {
-  ArticleQueryRpcClient,
-  BookmarkCommandRpcClient,
-  CommandRpcClient,
-  QueryRpcClient,
-} from "../../src/rpcClients.ts";
 
 const clients = (path: string) =>
   Layer.mergeAll(
-    CommandRpcClient.local,
-    QueryRpcClient.local,
-    BookmarkCommandRpcClient.local,
-    ArticleQueryRpcClient.local,
+    Application.CounterCommandClientLive,
+    Application.CounterQueryClientLive,
+    Application.UserCommandClientLive,
+    Application.UserQueryClientLive,
   ).pipe(Layer.provide(Application.DomainEventStore.jsonFile(path)));
 
 const path = `/tmp/es-web-e2e-${process.pid}.json`;

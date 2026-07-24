@@ -1,6 +1,6 @@
 import * as Domain from "@es-ts-example/domain";
 import * as Effect from "effect/Effect";
-import { DomainEventStore, narrowDomainEventStore } from "../services.ts";
+import { DomainEventStore, eventStoreFor } from "../eventStore.ts";
 import type { UserCommand } from "./commands.ts";
 import { makeListArticlesHandler } from "./queries/index.ts";
 import { userBookmarkReceiptFromAggregate } from "./readModels.ts";
@@ -8,7 +8,7 @@ import { makeUserRepository, type UserEventStore } from "./repository.ts";
 import { UserCommandApi, UserQueryApi } from "./rpc.ts";
 
 const makeUserStore = Effect.map(DomainEventStore, (store) =>
-  narrowDomainEventStore(Domain.UserEvent, store),
+  eventStoreFor(Domain.UserEvent, store),
 );
 
 const decide = (

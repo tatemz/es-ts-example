@@ -10,24 +10,25 @@ export type CounterAggregate = EventSourcingAggregate.Aggregate<
   Identifiers.CounterId
 >;
 
-const counterAggregateFactory = EventSourcingAggregate.makeAggregateFactory<
+const counterAggregate = EventSourcingAggregate.defineAggregate<
   State.CounterState,
   Events.CounterEvent,
   Identifiers.CounterId
 >({
   initialState: State.initialCounterState,
-  applyEvent: Reducer.applyCounterEvent,
+  reducer: Reducer.applyCounterEvent,
 });
 
-export const emptyCounter = (counterId: Identifiers.CounterId): CounterAggregate =>
-  counterAggregateFactory.empty(counterId);
+/** A counter with no history yet. Nothing has happened to it. */
+export const newCounter = (counterId: Identifiers.CounterId): CounterAggregate =>
+  counterAggregate.empty(counterId);
 
 export const recordCounterEvent: {
   (event: Events.CounterEvent): (aggregate: CounterAggregate) => CounterAggregate;
   (aggregate: CounterAggregate, event: Events.CounterEvent): CounterAggregate;
-} = counterAggregateFactory.recordEvent;
+} = counterAggregate.recordEvent;
 
-export const reconstituteCounter =
+export const replayCounter =
   (counterId: Identifiers.CounterId) =>
   (events: ReadonlyArray<Events.CounterEvent>): CounterAggregate =>
-    counterAggregateFactory.reconstitute(counterId)(events);
+    counterAggregate.replay(counterId)(events);

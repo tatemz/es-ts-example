@@ -9,12 +9,7 @@ import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import * as Rpc from "effect/unstable/rpc/Rpc";
 import * as RpcGroup from "effect/unstable/rpc/RpcGroup";
-import {
-  DomainEventStore,
-  main,
-  makeInProcessRpcClient,
-  narrowDomainEventStore,
-} from "../../src/index.ts";
+import { DomainEventStore, main, makeInProcessRpcClient, eventStoreFor } from "../../src/index.ts";
 
 const counterId = Domain.CounterId.make("counter-json");
 const jsonFilePath = "/tmp/es-poc-application-index-events.json";
@@ -60,7 +55,7 @@ testEffect("json-file event store persists and replays counter events", () =>
       Effect.provide(DomainEventStore.jsonFile(jsonFilePath)),
       Effect.provide(BunServices.layer),
     );
-    const counterStore = narrowDomainEventStore(Domain.CounterEvent, fileStore);
+    const counterStore = eventStoreFor(Domain.CounterEvent, fileStore);
 
     const created = Domain.CounterCreated.make({ counterId });
     const incremented = Domain.CounterIncremented.make({ counterId });
@@ -84,10 +79,10 @@ testEffect("json-file event store persists and replays counter events", () =>
   }).pipe(Effect.provide(BunServices.layer)),
 );
 
-testEffect("narrowed event store filters and rejects events outside its schema", () =>
+testEffect("a narrowed event store skips other slices' events on every read", () =>
   Effect.gen(function* () {
     const broad = yield* DomainEventStore;
-    const counterStore = narrowDomainEventStore(Domain.CounterEvent, broad);
+    const counterStore = eventStoreFor(Domain.CounterEvent, broad);
     const created = Domain.CounterCreated.make({ counterId });
     const incremented = Domain.CounterIncremented.make({ counterId });
 
@@ -97,12 +92,15 @@ testEffect("narrowed event store filters and rejects events outside its schema",
       events: [created, incremented],
     });
 
-    const createdOnly = narrowDomainEventStore(Domain.CounterCreated, broad);
-
-    const failure = yield* Effect.flip(createdOnly.fetch({ aggregateId: counterId }));
-    expect(failure._tag).toBe("EventStorePersistenceFailure");
-
+    // A narrower slice of the same stream: only creation facts belong to it.
+    const createdOnly = eventStoreFor(Domain.CounterCreated, broad);
+    const fetched = yield* createdOnly.fetch({ aggregateId: counterId });
     const streamed = yield* Stream.runCollect(createdOnly.fetchAll({}));
-    expect(Arr.map(Arr.fromIterable(streamed), (record) => record.event)).toEqual([created]);
+
+    // fetch and fetchAll answer the same question the same way.
+    expect({
+      fetched: Arr.map(fetched, (record) => record.event),
+      streamed: Arr.map(Arr.fromIterable(streamed), (record) => record.event),
+    }).toEqual({ fetched: [created], streamed: [created] });
   }).pipe(Effect.provide(DomainEventStore.inMemory)),
 );

@@ -8,26 +8,18 @@ export const effectBoundariesRuleName = "effect-boundaries";
 const asyncAwaitMessage =
   "Use Effect.gen with yield* instead of async/await; wrap foreign promises with Effect.promise/Effect.tryPromise at an allowlisted boundary.";
 
+/** The only modules allowed to leave the fiber runtime and enter the host. */
 const effectRunnerBoundary = {
   paths: [
     "packages/test-support/src/TestEffect.ts",
     "packages/test-support/src/run-effect-main.ts",
     "packages/web/bin/main.ts",
-    "packages/web/bin/uxAudit.ts",
-    "packages/web/test/visual/support/playwright-effect.ts",
-    "packages/web/test/visual/support/start-visual-server.ts",
-    "packages/web2/bin/main.ts",
   ],
-};
-
-// ponytail: throwaway web2 draft store keeps mutable module state; ceiling = process memory, upgrade = Effect Ref/service.
-const mutableModuleStateBoundary = {
-  paths: ["packages/web2/src/create/draftStore.ts"],
 };
 
 const asyncBoundary = {
   paths: effectRunnerBoundary.paths,
-  patterns: [/^scripts\/[^/]+\.ts$/, /^packages\/web\/test\/visual\//],
+  patterns: [/^scripts\/[^/]+\.ts$/],
 };
 
 const shouldRun = (filename) => {
@@ -109,7 +101,7 @@ export const effectBoundaries = createRule({
         report(context, node, "tryStatement");
       },
       VariableDeclaration(node) {
-        if (node.kind === "let" && !pathAllowedByPolicy(filename, mutableModuleStateBoundary)) {
+        if (node.kind === "let") {
           report(context, node, "letDeclaration");
         }
       },

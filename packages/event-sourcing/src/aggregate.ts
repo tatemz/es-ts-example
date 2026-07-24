@@ -15,13 +15,14 @@ export type Aggregate<State, Event, Id extends string = string> = {
 
 export const initialVersion: AggregateVersion = 0;
 
-export const fold =
+/** Replays a whole log into state, ignoring aggregate identity and version. */
+export const replayInto =
   <State, Event>(
     initialState: State,
-    applyEvent: Reducer<State, Event>,
+    reducer: Reducer<State, Event>,
   ): ((events: ReadonlyArray<Event>) => State) =>
   (events) =>
-    Fn.pipe(events, Arr.reduce(initialState, applyEvent));
+    Fn.pipe(events, Arr.reduce(initialState, reducer));
 
 export const makeAggregate = <State, Event, Id extends string>(
   aggregateId: Id,
@@ -33,70 +34,72 @@ export const makeAggregate = <State, Event, Id extends string>(
   pendingEvents: [],
 });
 
-export const applyEvent =
-  <State, Event>(options: {
-    readonly applyEvent: Reducer<State, Event>;
-    readonly event: Event;
-    readonly isNew: boolean;
-  }) =>
+/**
+ * Records a brand-new fact. The event is queued in `pendingEvents` for the
+ * store to append.
+ */
+export const recordEvent =
+  <State, Event>(options: { readonly reducer: Reducer<State, Event>; readonly event: Event }) =>
   <Id extends string>(aggregate: Aggregate<State, Event, Id>): Aggregate<State, Event, Id> => ({
     ...aggregate,
-    state: options.applyEvent(aggregate.state, options.event),
+    state: options.reducer(aggregate.state, options.event),
     version: aggregate.version + 1,
-    pendingEvents: options.isNew
-      ? [...aggregate.pendingEvents, options.event]
-      : aggregate.pendingEvents,
+    pendingEvents: [...aggregate.pendingEvents, options.event],
   });
 
-export const reconstituteAggregate = <State, Event, Id extends string>(options: {
+/**
+ * Replays a fact that is already in the store. Nothing is queued, because there
+ * is nothing left to write.
+ */
+export const replayEvent =
+  <State, Event>(options: { readonly reducer: Reducer<State, Event>; readonly event: Event }) =>
+  <Id extends string>(aggregate: Aggregate<State, Event, Id>): Aggregate<State, Event, Id> => ({
+    ...aggregate,
+    state: options.reducer(aggregate.state, options.event),
+    version: aggregate.version + 1,
+  });
+
+export const replayAggregate = <State, Event, Id extends string>(options: {
   readonly aggregateId: Id;
   readonly initialState: State;
-  readonly applyEvent: Reducer<State, Event>;
+  readonly reducer: Reducer<State, Event>;
   readonly events: ReadonlyArray<Event>;
 }): Aggregate<State, Event, Id> =>
   Fn.pipe(
     options.events,
     Arr.reduce(
       makeAggregate<State, Event, Id>(options.aggregateId, options.initialState),
-      (aggregate, event) =>
-        applyEvent({
-          applyEvent: options.applyEvent,
-          event,
-          isNew: false,
-        })(aggregate),
+      (aggregate, event) => replayEvent({ reducer: options.reducer, event })(aggregate),
     ),
   );
 
-export type AggregateFactory<State, Event, Id extends string> = {
+export type AggregateDefinition<State, Event, Id extends string> = {
   readonly empty: (aggregateId: Id) => Aggregate<State, Event, Id>;
   readonly recordEvent: {
     (event: Event): (aggregate: Aggregate<State, Event, Id>) => Aggregate<State, Event, Id>;
     (aggregate: Aggregate<State, Event, Id>, event: Event): Aggregate<State, Event, Id>;
   };
-  readonly reconstitute: (
+  readonly replay: (
     aggregateId: Id,
   ) => (events: ReadonlyArray<Event>) => Aggregate<State, Event, Id>;
 };
 
-export const makeAggregateFactory = <State, Event, Id extends string>(options: {
+/** Declares how one kind of aggregate starts, records facts, and replays. */
+export const defineAggregate = <State, Event, Id extends string>(options: {
   readonly initialState: State;
-  readonly applyEvent: Reducer<State, Event>;
-}): AggregateFactory<State, Event, Id> => ({
+  readonly reducer: Reducer<State, Event>;
+}): AggregateDefinition<State, Event, Id> => ({
   empty: (aggregateId) => makeAggregate<State, Event, Id>(aggregateId, options.initialState),
   recordEvent: Fn.dual(
     2,
     (aggregate: Aggregate<State, Event, Id>, event: Event): Aggregate<State, Event, Id> =>
-      applyEvent({
-        applyEvent: options.applyEvent,
-        event,
-        isNew: true,
-      })(aggregate),
+      recordEvent({ reducer: options.reducer, event })(aggregate),
   ),
-  reconstitute: (aggregateId) => (events) =>
-    reconstituteAggregate({
+  replay: (aggregateId) => (events) =>
+    replayAggregate({
       aggregateId,
       initialState: options.initialState,
-      applyEvent: options.applyEvent,
+      reducer: options.reducer,
       events,
     }),
 });

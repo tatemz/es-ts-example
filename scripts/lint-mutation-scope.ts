@@ -41,57 +41,14 @@ const packageHasTsx = (directory: string): boolean =>
 
 const webI18nMutationExcludes = Arr.make("!src/i18n/**/*.ts");
 
-const web2ThrowawayUiMutationExcludes = Arr.make(
-  "!src/ui/**/*.ts",
-  "!src/ui/**/*.tsx",
-  "!src/discover/**/*.ts",
-  "!src/discover/**/*.tsx",
-  "!src/search/**/*.ts",
-  "!src/search/**/*.tsx",
-  "!src/route/**/*.ts",
-  "!src/route/**/*.tsx",
-  "!src/play/**/*.ts",
-  "!src/play/**/*.tsx",
-  "!src/party/**/*.ts",
-  "!src/party/**/*.tsx",
-  "!src/memory/**/*.ts",
-  "!src/memory/**/*.tsx",
-  "!src/reward/**/*.ts",
-  "!src/reward/**/*.tsx",
-  "!src/profile/**/*.ts",
-  "!src/profile/**/*.tsx",
-  "!src/create/**/*.ts",
-  "!src/create/**/*.tsx",
-  "!src/mvc/**/*.ts",
-);
-
 const webI18nMutationEntryAllowed = (directory: string, entry: string): boolean =>
   Fn.pipe(webI18nMutationExcludes, Arr.contains(entry))
     ? namedExceptionAllowsPath("mutation-web-i18n-adapter-surface", `${directory}/${entry}`)
     : false;
 
-const web2ThrowawayUiMutationEntryAllowed = (directory: string, entry: string): boolean =>
-  directory === "packages/web2" && Fn.pipe(web2ThrowawayUiMutationExcludes, Arr.contains(entry))
-    ? namedExceptionAllowsPath("mutation-web2-throwaway-ui", `${directory}/${entry}`)
-    : false;
-
 const fixedMutationExceptionScopes = new Map([
-  ["!src/postgres-event-store.ts", "mutation-runtime-boundaries"],
-  ["!src/identityGenerators.ts", "mutation-runtime-boundaries"],
   ["!src/mvc/jsx-runtime.ts", "mutation-runtime-boundaries"],
-  ["!src/rpcClients.ts", "mutation-runtime-boundaries"],
   ["!src/server.ts", "mutation-runtime-boundaries"],
-  ["!src/client.ts", "mutation-runtime-boundaries"],
-  ["!src/payments/commands/beginAdventureTip.ts", "mutation-sandbox-payment-boundaries"],
-  ["!src/payments/commands/reconcileAdventureTipPayment.ts", "mutation-sandbox-payment-boundaries"],
-  ["!src/payments/paymentProvider.ts", "mutation-sandbox-payment-boundaries"],
-  ["!src/payments/processedProviderEvents.ts", "mutation-sandbox-payment-boundaries"],
-  ["!src/payments/Commands.ts", "mutation-sandbox-payment-boundaries"],
-  ["!src/payments/FailureReasons.ts", "mutation-sandbox-payment-boundaries"],
-  ["!src/payments/Invariants.ts", "mutation-sandbox-payment-boundaries"],
-  ["!src/paymentRoutePolicy.ts", "mutation-sandbox-payment-boundaries"],
-  ["!src/runtime-config.ts", "mutation-sandbox-payment-boundaries"],
-  ["!src/demo.ts", "mutation-static-seed-identifiers"],
   ["!src/index.ts", "mutation-public-barrel-boundaries"],
 ]);
 
@@ -109,9 +66,7 @@ const mutationEntryAllowed = (directory: string, entry: string): boolean => {
   }
 
   return (
-    fixedMutationEntryAllowed(directory, entry) ||
-    webI18nMutationEntryAllowed(directory, entry) ||
-    web2ThrowawayUiMutationEntryAllowed(directory, entry)
+    fixedMutationEntryAllowed(directory, entry) || webI18nMutationEntryAllowed(directory, entry)
   );
 };
 

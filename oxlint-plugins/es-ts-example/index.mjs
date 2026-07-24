@@ -9,30 +9,18 @@ import {
 } from "./rules/effect-trypromise-requires-catch/rule.mjs";
 import { effectBoundaries, effectBoundariesRuleName } from "./rules/effect-boundaries/rule.mjs";
 import {
-  i18nMessageCatalogs,
-  i18nMessageCatalogsRuleName,
-} from "./rules/i18n-message-catalogs/rule.mjs";
-import {
   importRuntimeBoundaries,
   importRuntimeBoundariesRuleName,
 } from "./rules/import-runtime-boundaries/rule.mjs";
 import {
-  literalUnionOwnership,
-  literalUnionOwnershipRuleName,
-} from "./rules/literal-union-ownership/rule.mjs";
-import {
   mvcControllerNoModelFactories,
   mvcControllerNoModelFactoriesRuleName,
 } from "./rules/mvc-controller-no-model-factories/rule.mjs";
-import {
-  mvcControllerOwnsOneController,
-  mvcControllerOwnsOneControllerRuleName,
-} from "./rules/mvc-controller-owns-one-controller/rule.mjs";
 import { mvcFilePlacement, mvcFilePlacementRuleName } from "./rules/mvc-file-placement/rule.mjs";
 import {
-  mvcFactoryOwnsOneRenderableFactory,
-  mvcFactoryOwnsOneRenderableFactoryRuleName,
-} from "./rules/mvc-factory-owns-one-renderable-factory/rule.mjs";
+  mvcOneExportPerRoleFile,
+  mvcOneExportPerRoleFileRuleName,
+} from "./rules/mvc-one-export-per-role-file/rule.mjs";
 import {
   mvcFactoryUserFacingStringsUseI18n,
   mvcFactoryUserFacingStringsUseI18nRuleName,
@@ -45,10 +33,6 @@ import {
   mvcModelNoBooleanState,
   mvcModelNoBooleanStateRuleName,
 } from "./rules/mvc-model-no-boolean-state/rule.mjs";
-import {
-  mvcModelOwnsOneRenderableModel,
-  mvcModelOwnsOneRenderableModelRuleName,
-} from "./rules/mvc-model-owns-one-renderable-model/rule.mjs";
 import {
   mvcModelRequiresFactory,
   mvcModelRequiresFactoryRuleName,
@@ -66,10 +50,6 @@ import {
   mvcViewNoCardinalityDecisions,
   mvcViewNoCardinalityDecisionsRuleName,
 } from "./rules/mvc-view-no-cardinality-decisions/rule.mjs";
-import {
-  mvcViewOwnsOneRenderableView,
-  mvcViewOwnsOneRenderableViewRuleName,
-} from "./rules/mvc-view-owns-one-renderable-view/rule.mjs";
 import {
   mvcViewPrefersModelParameter,
   mvcViewPrefersModelParameterRuleName,
@@ -102,7 +82,6 @@ import {
   renderedDomContract,
   renderedDomContractRuleName,
 } from "./rules/rendered-dom-contract/rule.mjs";
-import { repoPathPolicy, repoPathPolicyRuleName } from "./rules/repo-path-policy/rule.mjs";
 import { strongTypes, strongTypesRuleName } from "./rules/strong-types/rule.mjs";
 import {
   testAssertionBoundaries,
@@ -117,10 +96,6 @@ import {
   testFixtureBoundaries,
   testFixtureBoundariesRuleName,
 } from "./rules/test-fixture-boundaries/rule.mjs";
-import {
-  unitTestArchitecture,
-  unitTestArchitectureRuleName,
-} from "./rules/unit-test-architecture/rule.mjs";
 import {
   viewFilenamingConvention,
   viewFilenamingConventionRuleName,
@@ -139,23 +114,18 @@ export const rules = {
   [effectBoundariesRuleName]: effectBoundaries,
   [effectFirstCodeRuleName]: effectFirstCode,
   [effectTryPromiseRequiresCatchRuleName]: effectTryPromiseRequiresCatch,
-  [i18nMessageCatalogsRuleName]: i18nMessageCatalogs,
   [importRuntimeBoundariesRuleName]: importRuntimeBoundaries,
-  [literalUnionOwnershipRuleName]: literalUnionOwnership,
   [mvcClassesStayInViewsRuleName]: mvcClassesStayInViews,
   [mvcControllerNoModelFactoriesRuleName]: mvcControllerNoModelFactories,
-  [mvcControllerOwnsOneControllerRuleName]: mvcControllerOwnsOneController,
-  [mvcFactoryOwnsOneRenderableFactoryRuleName]: mvcFactoryOwnsOneRenderableFactory,
   [mvcFactoryUserFacingStringsUseI18nRuleName]: mvcFactoryUserFacingStringsUseI18n,
   [mvcFilePlacementRuleName]: mvcFilePlacement,
+  [mvcOneExportPerRoleFileRuleName]: mvcOneExportPerRoleFile,
   [mvcModelNoBooleanStateRuleName]: mvcModelNoBooleanState,
-  [mvcModelOwnsOneRenderableModelRuleName]: mvcModelOwnsOneRenderableModel,
   [mvcModelRequiresFactoryRuleName]: mvcModelRequiresFactory,
   [mvcModelRequiresViewRuleName]: mvcModelRequiresView,
   [mvcRenderableVariantsUseTagsRuleName]: mvcRenderableVariantsUseTags,
   [mvcUiArchitectureRuleName]: mvcUiArchitecture,
   [mvcViewNoCardinalityDecisionsRuleName]: mvcViewNoCardinalityDecisions,
-  [mvcViewOwnsOneRenderableViewRuleName]: mvcViewOwnsOneRenderableView,
   [mvcViewPrefersModelParameterRuleName]: mvcViewPrefersModelParameter,
   [mvcViewRequiresModelSiblingRuleName]: mvcViewRequiresModelSibling,
   [noFallibleModuleScopeMakeRuleName]: noFallibleModuleScopeMake,
@@ -164,13 +134,11 @@ export const rules = {
   [noOptionReturningFilterMapRuleName]: noOptionReturningFilterMap,
   [publicEntrypointPolicyRuleName]: publicEntrypointPolicy,
   [renderedDomContractRuleName]: renderedDomContract,
-  [repoPathPolicyRuleName]: repoPathPolicy,
   [strongTypesRuleName]: strongTypes,
   [testAssertionBoundariesRuleName]: testAssertionBoundaries,
   [testAssertionQualityRuleName]: testAssertionQuality,
   [testDisciplineRuleName]: testDiscipline,
   [testFixtureBoundariesRuleName]: testFixtureBoundaries,
-  [unitTestArchitectureRuleName]: unitTestArchitecture,
   [viewFilenamingConventionRuleName]: viewFilenamingConvention,
   [webUiComponentContractsRuleName]: webUiComponentContracts,
   [webViewModelStringsRuleName]: webViewModelStrings,

@@ -12,7 +12,7 @@ import {
   CounterEvent,
   type CounterEvent as CounterEventType,
   applyCounterEvent,
-  applyNewCounterEvent,
+  recordNewCounterEvent,
   counterClosed,
   created,
   decideIncrement,
@@ -26,9 +26,9 @@ const makeJsonFileCounterEventStore = (path: string) =>
 
 describe("event-sourcing aggregate core", () => {
   test("folds events into state", () => {
-    const foldCounter = EventSourcing.fold(0, applyCounterEvent);
+    const counterStateFrom = EventSourcing.replayInto(0, applyCounterEvent);
 
-    expect(foldCounter([incremented(2), incremented(3), reset(), incremented(1)])).toBe(1);
+    expect(counterStateFrom([incremented(2), incremented(3), reset(), incremented(1)])).toBe(1);
   });
 
   test("creates an empty aggregate at the initial version", () => {
@@ -42,11 +42,11 @@ describe("event-sourcing aggregate core", () => {
     });
   });
 
-  test("reconstitutes historical events without marking them pending", () => {
-    const aggregate = EventSourcing.reconstituteAggregate({
+  test("replays historical events without marking them pending", () => {
+    const aggregate = EventSourcing.replayAggregate({
       aggregateId: "counter-1",
       initialState: 0,
-      applyEvent: applyCounterEvent,
+      reducer: applyCounterEvent,
       events: [incremented(2), incremented(3)],
     });
 
@@ -64,7 +64,7 @@ describe("event-sourcing aggregate core", () => {
       0,
     );
 
-    expect(applyNewCounterEvent(incremented(2))(aggregate)).toEqual({
+    expect(recordNewCounterEvent(incremented(2))(aggregate)).toEqual({
       aggregateId: "counter-1",
       state: 2,
       version: 1,
@@ -78,8 +78,8 @@ describe("event-sourcing aggregate core", () => {
       0,
     );
 
-    const changed = applyNewCounterEvent(incremented(3))(
-      applyNewCounterEvent(incremented(2))(aggregate),
+    const changed = recordNewCounterEvent(incremented(3))(
+      recordNewCounterEvent(incremented(2))(aggregate),
     );
 
     expect(changed.state).toBe(5);
@@ -88,14 +88,14 @@ describe("event-sourcing aggregate core", () => {
   });
 
   test("builds aggregate-specific helpers from a reducer and initial state", () => {
-    const factory = EventSourcing.makeAggregateFactory<number, CounterEventType, "counter-1">({
+    const definition = EventSourcing.defineAggregate<number, CounterEventType, "counter-1">({
       initialState: 0,
-      applyEvent: applyCounterEvent,
+      reducer: applyCounterEvent,
     });
 
-    const empty = factory.empty("counter-1");
-    const changed = factory.recordEvent(incremented(2))(empty);
-    const reconstituted = factory.reconstitute("counter-1")([incremented(2), reset()]);
+    const empty = definition.empty("counter-1");
+    const changed = definition.recordEvent(incremented(2))(empty);
+    const replayed = definition.replay("counter-1")([incremented(2), reset()]);
 
     expect(empty).toEqual({
       aggregateId: "counter-1",
@@ -109,7 +109,7 @@ describe("event-sourcing aggregate core", () => {
       version: 1,
       pendingEvents: [incremented(2)],
     });
-    expect(reconstituted).toEqual({
+    expect(replayed).toEqual({
       aggregateId: "counter-1",
       state: 0,
       version: 2,
@@ -486,7 +486,7 @@ describe("aggregate repository", () => {
       const store = yield* EventSourcing.makeInMemoryEventStore<CounterEventType>();
       const repository = makeCounterRepository(store);
       const loaded = yield* repository.load("counter-1");
-      const changed = applyNewCounterEvent(incremented(3))(loaded);
+      const changed = recordNewCounterEvent(incremented(3))(loaded);
       const saved = yield* repository.save(changed);
       const records = yield* store.fetch({ aggregateId: "counter-1" });
 
@@ -511,7 +511,7 @@ describe("aggregate repository", () => {
     Effect.gen(function* () {
       const store = yield* EventSourcing.makeInMemoryEventStore<CounterEventType>();
       const repository = makeCounterRepository(store);
-      const changed = applyNewCounterEvent(incremented(3))(yield* repository.load("counter-1"));
+      const changed = recordNewCounterEvent(incremented(3))(yield* repository.load("counter-1"));
 
       const committed = yield* repository.commit(EventSourcing.accept(changed));
       const records = yield* store.fetch({ aggregateId: "counter-1" });
@@ -540,7 +540,7 @@ describe("aggregate repository", () => {
     Effect.gen(function* () {
       const fetchCountRef = yield* Ref.make(0);
       const appendCommandsRef = yield* Ref.make<
-        ReadonlyArray<EventSourcing.AppendEvents<CounterEventType>>
+        ReadonlyArray<EventSourcing.AppendRequest<CounterEventType>>
       >([]);
       const store: EventSourcing.EventStore<CounterEventType> = {
         fetch: () =>
@@ -566,7 +566,7 @@ describe("aggregate repository", () => {
           }),
       };
       const repository = makeCounterRepository(store);
-      const changed = applyNewCounterEvent(incremented(3))(
+      const changed = recordNewCounterEvent(incremented(3))(
         EventSourcing.makeAggregate<number, CounterEventType, "counter-1">("counter-1", 0),
       );
       const saved = yield* repository.save(changed);
@@ -618,18 +618,18 @@ describe("aggregate repository", () => {
       const first = EventSourcing.makeAggregateRepository({
         store,
         initialState: 0,
-        applyEvent: applyCounterEvent,
+        reducer: applyCounterEvent,
         streamName: (id: string) => `first:${id}`,
       });
       const second = EventSourcing.makeAggregateRepository({
         store,
         initialState: 0,
-        applyEvent: applyCounterEvent,
+        reducer: applyCounterEvent,
         streamName: (id: string) => `second:${id}`,
       });
 
-      yield* first.save(applyNewCounterEvent(incremented(1))(yield* first.load("shared-id")));
-      yield* second.save(applyNewCounterEvent(incremented(2))(yield* second.load("shared-id")));
+      yield* first.save(recordNewCounterEvent(incremented(1))(yield* first.load("shared-id")));
+      yield* second.save(recordNewCounterEvent(incremented(2))(yield* second.load("shared-id")));
 
       const result = {
         first: yield* first.load("shared-id"),
@@ -663,10 +663,10 @@ describe("aggregate repository", () => {
       const firstCopy = yield* repository.load("counter-1");
       const secondCopy = yield* repository.load("counter-1");
 
-      yield* repository.save(applyNewCounterEvent(incremented(1))(firstCopy));
+      yield* repository.save(recordNewCounterEvent(incremented(1))(firstCopy));
 
       const conflict = yield* repository
-        .save(applyNewCounterEvent(incremented(2))(secondCopy))
+        .save(recordNewCounterEvent(incremented(2))(secondCopy))
         .pipe(Effect.flip);
 
       expect(conflict).toEqual(

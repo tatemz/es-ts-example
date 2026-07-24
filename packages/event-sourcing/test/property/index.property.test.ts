@@ -10,7 +10,7 @@ import * as EventSourcing from "../../src/index.ts";
 import {
   type CounterEvent,
   applyCounterEvent,
-  applyNewCounterEvent,
+  recordNewCounterEvent,
   incremented,
   reset,
 } from "../support/Counter.ts";
@@ -33,14 +33,14 @@ const nonEmptyCounterEvents = FastCheck.array(counterEvent, {
   maxLength: 20,
 });
 
-test("property: fold and aggregate reconstitution derive the same state", () => {
+test("property: fold and aggregate replay derive the same state", () => {
   FastCheck.assert(
     FastCheck.property(counterEvents, (events) => {
-      const foldedState = EventSourcing.fold(0, applyCounterEvent)(events);
-      const aggregate = EventSourcing.reconstituteAggregate({
+      const foldedState = EventSourcing.replayInto(0, applyCounterEvent)(events);
+      const aggregate = EventSourcing.replayAggregate({
         aggregateId: "counter-1",
         initialState: 0,
-        applyEvent: applyCounterEvent,
+        reducer: applyCounterEvent,
         events,
       });
 
@@ -50,13 +50,13 @@ test("property: fold and aggregate reconstitution derive the same state", () => 
   );
 });
 
-test("property: reconstituted aggregate version equals historical event count", () => {
+test("property: replayed aggregate version equals historical event count", () => {
   FastCheck.assert(
     FastCheck.property(counterEvents, (events) => {
-      const aggregate = EventSourcing.reconstituteAggregate({
+      const aggregate = EventSourcing.replayAggregate({
         aggregateId: "counter-1",
         initialState: 0,
-        applyEvent: applyCounterEvent,
+        reducer: applyCounterEvent,
         events,
       });
 
@@ -69,10 +69,10 @@ test("property: reconstituted aggregate version equals historical event count", 
 test("property: historical events are never pending persistence", () => {
   FastCheck.assert(
     FastCheck.property(counterEvents, (events) => {
-      const aggregate = EventSourcing.reconstituteAggregate({
+      const aggregate = EventSourcing.replayAggregate({
         aggregateId: "counter-1",
         initialState: 0,
-        applyEvent: applyCounterEvent,
+        reducer: applyCounterEvent,
         events,
       });
 
@@ -85,21 +85,21 @@ test("property: historical events are never pending persistence", () => {
 test("property: new aggregate changes keep exactly the new pending events", () => {
   FastCheck.assert(
     FastCheck.property(counterEvents, counterEvents, (history, newEvents) => {
-      const aggregate = EventSourcing.reconstituteAggregate({
+      const aggregate = EventSourcing.replayAggregate({
         aggregateId: "counter-1",
         initialState: 0,
-        applyEvent: applyCounterEvent,
+        reducer: applyCounterEvent,
         events: history,
       });
       const changed = Fn.pipe(
         newEvents,
-        Arr.reduce(aggregate, (current, event) => applyNewCounterEvent(event)(current)),
+        Arr.reduce(aggregate, (current, event) => recordNewCounterEvent(event)(current)),
       );
 
       expect(changed.pendingEvents).toEqual(newEvents);
       expect(changed.version).toBe(history.length + newEvents.length);
       expect(changed.state).toBe(
-        EventSourcing.fold(0, applyCounterEvent)([...history, ...newEvents]),
+        EventSourcing.replayInto(0, applyCounterEvent)([...history, ...newEvents]),
       );
     }),
     propertyTestParameters,

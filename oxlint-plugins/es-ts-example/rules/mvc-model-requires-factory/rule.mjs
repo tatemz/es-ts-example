@@ -4,7 +4,7 @@ import * as Str from "effect/String";
 
 import { getBasename, isRealFilename, isWebSourcePath } from "../shared/filename.mjs";
 import { stemFromModelFilename } from "../shared/mvc-ownership.mjs";
-import { factoryPathForStem, webSrcRootFromFilename } from "../shared/paths.mjs";
+import { factoryPathForStem, webMvcLayer, webSrcRootFromFilename } from "../shared/paths.mjs";
 
 export const mvcModelRequiresFactoryRuleName = "mvc-model-requires-factory";
 
@@ -31,9 +31,14 @@ export const mvcModelRequiresFactory = {
       return {};
     }
 
+    const layer = webMvcLayer(filename);
+    if (layer === undefined) {
+      return {};
+    }
+
     const stem = stemFromModelFilename(filename);
-    const factoryFilename = `${stem}.factory.ts`;
-    const factoryPath = factoryPathForStem(webSrcRootFromFilename(filename), stem);
+    const factoryFilename = `${layer}/${stem}.factory.ts`;
+    const factoryPath = factoryPathForStem(webSrcRootFromFilename(filename), layer, stem);
 
     if (existsSync(factoryPath)) {
       return {};

@@ -12,15 +12,10 @@ const verbPairs = [
   ["disable", "Disable"],
 ] as const;
 
-const statusArb: FastCheck.Arbitrary<"active" | "disabled"> = FastCheck.constantFrom(
-  "active",
-  "disabled",
-);
-
-const counterArb: FastCheck.Arbitrary<Application.CounterRead> = FastCheck.record({
-  counterId: FastCheck.string({ minLength: 1 }),
+const counterArb: FastCheck.Arbitrary<Application.CounterSummary> = FastCheck.record({
+  _tag: FastCheck.constantFrom("ActiveCounterSummary" as const, "DisabledCounterSummary" as const),
+  counterId: FastCheck.string({ minLength: 1 }).map((id) => Application.CounterId.make(id)),
   value: FastCheck.integer(),
-  status: statusArb,
   version: FastCheck.integer({ min: 0 }),
 });
 

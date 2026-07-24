@@ -9,7 +9,7 @@ import * as Schema from "effect/Schema";
 import { Bdd } from "effect-bdd";
 import {
   type CounterCommandError,
-  type CounterRead,
+  type CounterSummary,
   makeCounterCommandHandler,
   makeListCountersHandler,
 } from "../../../src/index.ts";
@@ -109,7 +109,7 @@ const disableCounter = (state: CounterScenarioState): Effect.Effect<CounterScena
     ),
   );
 
-const projectedCounter = (state: CounterScenarioState): Effect.Effect<CounterRead, string> =>
+const projectedCounter = (state: CounterScenarioState): Effect.Effect<CounterSummary, string> =>
   Effect.flatMap(expectStore(state), (store) =>
     makeListCountersHandler(store)().pipe(
       Effect.mapError((error) => error.message),
@@ -195,7 +195,7 @@ const thenCounterValueIs = Bdd.then`the counter value is ${expectedValue}`(
 
 const thenCounterIsActive = Bdd.then`the counter is active`((state: CounterScenarioState) =>
   Effect.map(projectedCounter(state), (read) => {
-    assertCounterIsActive(read.status === "active");
+    assertCounterIsActive(read._tag === "ActiveCounterSummary");
     return state;
   }),
 );

@@ -22,7 +22,6 @@ implementations.
   to map foreign failures explicitly.
 - `import-runtime-boundaries`: keeps platform APIs, route literals, providers,
   and runtime configuration behind adapters.
-- `literal-union-ownership`: prevents duplicate local literal unions.
 - `no-fallible-module-scope-make`: keeps fallible schema/domain `.make(...)`
   constructors out of module initialization.
 - `no-lowercase-effect-order`: catches Effect v4 primitive `Order` member drift.
@@ -38,10 +37,6 @@ implementations.
   factories.
 - `mvc-controller-no-model-factories`: keeps model construction in factory
   files.
-- `mvc-controller-owns-one-controller`: requires each `*.controller.ts` file
-  to own one controller.
-- `mvc-factory-owns-one-renderable-factory`: requires each factory file to own
-  one renderable-model factory.
 - `mvc-factory-user-facing-strings-use-i18n`: rejects hard-coded user-facing
   model properties in factories.
 - `mvc-file-placement`: keeps concrete MVC files in their flat role lanes and
@@ -52,19 +47,17 @@ implementations.
   `Schema.optionalKey` with a child model. The rule is syntax-based; semantic
   coupling between multiple optional fields remains a review concern, not
   reliably lintable.
-- `mvc-model-owns-one-renderable-model`: requires each model file to own one
-  renderable model.
 - `mvc-model-requires-factory`: requires each model to have a matching factory.
 - `mvc-model-requires-view`: requires each model to be consumed by every
   registered theme.
+- `mvc-one-export-per-role-file`: requires each model, factory, view, and
+  controller file to own exactly one export in its role.
 - `mvc-renderable-variants-use-tags`: requires renderable variants to be
   tagged models.
 - `mvc-ui-architecture`: keeps async work out of MVC models, factories, and
   page views, and raw controls out of page views.
 - `mvc-view-no-cardinality-decisions`: keeps array cardinality branching out of
   themed views; factories emit tagged empty or populated presentation unions.
-- `mvc-view-owns-one-renderable-view`: requires each view file to own one
-  renderable view.
 - `mvc-view-prefers-model-parameter`: requires exported views to accept a
   `model` parameter.
 - `mvc-view-requires-model-sibling`: requires each view to import its matching
@@ -72,10 +65,9 @@ implementations.
 
 ### Web UI And Internationalization
 
-- `i18n-message-catalogs`: prevents duplicate message ids within a catalog.
 - `view-filenaming-convention`: enforces the `*.view.tsx` naming contract.
-- `web-ui-component-contracts`: keeps reusable `EsTsExample*` components public,
-  stable, and identifiable in rendered markup.
+- `web-ui-component-contracts`: keeps reusable components public, stable, and
+  identifiable in rendered markup.
 - `web-view-model-strings`: requires views to receive user-facing copy through
   models.
 
@@ -87,14 +79,24 @@ implementations.
 - `test-assertion-quality`: requires exact, mutation-resistant assertions.
 - `test-discipline`: prevents nested Effect runners in Effect test bodies.
 - `test-fixture-boundaries`: keeps runtime demo fixtures out of unit tests.
-- `unit-test-architecture`: keeps unit tests local and assertion-transparent.
 
 ### Repository Policy
 
 - `public-entrypoint-policy`: keeps package entrypoints small and free of seed
   exports.
-- `repo-path-policy`: prevents TypeScript path literals from escaping the
-  repository.
+
+## Rules That Belong In `scripts/` Instead
+
+A rule earns its place here only when one file holds the whole answer. Four
+invariants used to be enforced twice, once per file here and once repo-wide in
+`scripts/`; the repo-wide check always subsumed the local one, so only the
+script survives:
+
+- duplicate literal unions: `scripts/lint-literal-unions.ts`
+- duplicate and orphaned message ids: `scripts/lint-i18n-messages.ts`
+- unit test slices, sizes, and support discipline:
+  `scripts/lint-unit-test-architecture.ts`
+- paths escaping the repository: `scripts/lint-repo-path-policy.ts`
 
 ## Testing
 

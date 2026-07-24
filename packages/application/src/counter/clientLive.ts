@@ -2,7 +2,7 @@ import * as Layer from "effect/Layer";
 import { makeInProcessRpcClient } from "../rpc/inProcess.ts";
 import { CounterCommandHandlers, CounterQueryHandlers } from "./handlers.ts";
 import { CounterCommandApi, CounterQueryApi } from "./rpc.ts";
-import { CounterCommandClient, CounterQueryClient } from "./services.ts";
+import { CounterCommandClient, CounterQueryClient } from "./clients.ts";
 
 export const CounterCommandClientLive = Layer.effect(
   CounterCommandClient,

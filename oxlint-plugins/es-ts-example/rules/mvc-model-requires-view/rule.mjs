@@ -1,12 +1,11 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import * as Arr from "effect/Array";
 import * as Fn from "effect/Function";
-import * as Option from "effect/Option";
 import * as Str from "effect/String";
 
 import { getBasename, isRealFilename, isWebSourcePath } from "../shared/filename.mjs";
 import { stemFromModelFilename } from "../shared/mvc-ownership.mjs";
-import { webSrcRootFromFilename, webViewThemes } from "../shared/paths.mjs";
+import { modelImportSourceForStem, webMvcLayer, webSrcRootFromFilename } from "../shared/paths.mjs";
 
 export const mvcModelRequiresViewRuleName = "mvc-model-requires-view";
 
@@ -15,34 +14,17 @@ const viewSuffix = ".view.tsx";
 
 const isModelFile = (filename) => Fn.pipe(getBasename(filename), Str.endsWith(modelSuffix));
 
-const themeImportsModel = (webRoot, theme, stem) => {
-  const themeDir = `${webRoot}/views/${theme}`;
-  if (!existsSync(themeDir)) {
-    return { missingTheme: true, theme };
-  }
-
-  const importSource = `../../models/${stem}.model.ts`;
-
-  const importsModel = Fn.pipe(
-    readdirSync(themeDir),
+const someViewImportsModel = (viewDir, importSource) =>
+  Fn.pipe(
+    readdirSync(viewDir),
     Arr.some((entry) => {
       if (!Fn.pipe(entry, Str.endsWith(viewSuffix))) {
         return false;
       }
 
-      const source = readFileSync(`${themeDir}/${entry}`, "utf8");
+      const source = readFileSync(`${viewDir}/${entry}`, "utf8");
       return source.includes(`from "${importSource}"`) || source.includes(`from '${importSource}'`);
     }),
-  );
-
-  return importsModel ? undefined : { missingTheme: false, theme };
-};
-
-const missingThemesForModel = (webRoot, stem) =>
-  Fn.pipe(
-    webViewThemes,
-    Arr.map((theme) => themeImportsModel(webRoot, theme, stem)),
-    Arr.filter((result) => result !== undefined),
   );
 
 export const mvcModelRequiresView = {
@@ -50,13 +32,13 @@ export const mvcModelRequiresView = {
     type: "problem",
     docs: {
       description:
-        "Require web MVC model files to be imported by at least one view in each registered layout theme.",
+        "Require every web MVC model file to be imported by at least one view in the matching layer.",
     },
     messages: {
-      missingThemeDirectory:
-        "Model files must be imported by at least one view in the `{{theme}}` theme. Create `src/views/{{theme}}/` and add a view that imports from `../../models/{{stem}}.model.ts`.",
+      missingViewDirectory:
+        "Models must be rendered by a view. Create `src/views/{{layer}}/` and add a view that imports from `{{importSource}}`.",
       missingView:
-        "Model files must be imported by at least one view in each registered theme. No view under `src/views/{{theme}}/` imports from `../../models/{{stem}}.model.ts`.",
+        "Models must be rendered by a view. No view under `src/views/{{layer}}/` imports from `{{importSource}}`.",
     },
     schema: [],
   },
@@ -67,22 +49,37 @@ export const mvcModelRequiresView = {
       return {};
     }
 
-    const stem = stemFromModelFilename(filename);
-    const webRoot = webSrcRootFromFilename(filename);
-    const missingThemes = missingThemesForModel(webRoot, stem);
-
-    if (Arr.isReadonlyArrayEmpty(missingThemes)) {
+    const layer = webMvcLayer(filename);
+    if (layer === undefined) {
       return {};
     }
 
-    const firstMissing = Fn.pipe(missingThemes, Arr.get(0), Option.getOrThrow);
+    const stem = stemFromModelFilename(filename);
+    const viewDir = `${webSrcRootFromFilename(filename)}/views/${layer}`;
+    const importSource = modelImportSourceForStem(layer, stem);
+
+    if (!existsSync(viewDir)) {
+      return {
+        Program(node) {
+          context.report({
+            node,
+            messageId: "missingViewDirectory",
+            data: { importSource, layer },
+          });
+        },
+      };
+    }
+
+    if (someViewImportsModel(viewDir, importSource)) {
+      return {};
+    }
 
     return {
       Program(node) {
         context.report({
           node,
-          messageId: firstMissing.missingTheme ? "missingThemeDirectory" : "missingView",
-          data: { stem, theme: firstMissing.theme },
+          messageId: "missingView",
+          data: { importSource, layer },
         });
       },
     };

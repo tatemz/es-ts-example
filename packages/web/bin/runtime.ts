@@ -2,12 +2,6 @@ import * as Application from "@es-ts-example/application";
 import * as WebConfig from "effect/Config";
 import * as Layer from "effect/Layer";
 import * as Match from "effect/Match";
-import {
-  ArticleQueryRpcClient,
-  BookmarkCommandRpcClient,
-  CommandRpcClient,
-  QueryRpcClient,
-} from "../src/rpcClients.ts";
 import type { WebRuntimeStorageConfig } from "../src/runtime-config.ts";
 export { parseStorageBackend, type WebRuntimeStorageConfig } from "../src/runtime-config.ts";
 
@@ -28,8 +22,8 @@ const storageLayer = (config: WebRuntimeStorageConfig) =>
 
 export const localRpcClients = (config: WebRuntimeStorageConfig) =>
   Layer.mergeAll(
-    CommandRpcClient.local,
-    QueryRpcClient.local,
-    BookmarkCommandRpcClient.local,
-    ArticleQueryRpcClient.local,
+    Application.CounterCommandClientLive,
+    Application.CounterQueryClientLive,
+    Application.UserCommandClientLive,
+    Application.UserQueryClientLive,
   ).pipe(Layer.provide(storageLayer(config)));

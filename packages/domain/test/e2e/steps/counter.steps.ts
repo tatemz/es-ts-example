@@ -27,7 +27,7 @@ const initialScenarioState: CounterScenarioState = {
 
 const resetScenario = (): CounterScenarioState => ({
   ...initialScenarioState,
-  counter: Domain.emptyCounter(counterId),
+  counter: Domain.newCounter(counterId),
 });
 
 const reject = (message: string): Effect.Effect<never, string> => Effect.fail(message);
@@ -67,13 +67,13 @@ const recordDecisionResult = (
 const createCounter = (state: CounterScenarioState): CounterScenarioState =>
   recordDecisionResult(
     state,
-    Domain.createCounter({ counterId })(state.counter ?? Domain.emptyCounter(counterId)),
+    Domain.createCounter({ counterId })(state.counter ?? Domain.newCounter(counterId)),
   );
 
 const incrementCounter = (state: CounterScenarioState): CounterScenarioState =>
   recordDecisionResult(
     state,
-    Domain.incrementCounter()(state.counter ?? Domain.emptyCounter(counterId)),
+    Domain.incrementCounter()(state.counter ?? Domain.newCounter(counterId)),
   );
 
 const incrementCounterTimes = (state: CounterScenarioState, times: number): CounterScenarioState =>
@@ -85,13 +85,13 @@ const incrementCounterTimes = (state: CounterScenarioState, times: number): Coun
 const decrementCounter = (state: CounterScenarioState): CounterScenarioState =>
   recordDecisionResult(
     state,
-    Domain.decrementCounter()(state.counter ?? Domain.emptyCounter(counterId)),
+    Domain.decrementCounter()(state.counter ?? Domain.newCounter(counterId)),
   );
 
 const disableCounter = (state: CounterScenarioState): CounterScenarioState =>
   recordDecisionResult(
     state,
-    Domain.disableCounter()(state.counter ?? Domain.emptyCounter(counterId)),
+    Domain.disableCounter()(state.counter ?? Domain.newCounter(counterId)),
   );
 
 const count = Bdd.capture("count", Schema.FiniteFromString);

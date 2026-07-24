@@ -53,15 +53,7 @@ const duplicateViolations = Fn.pipe(
   entries,
   Arr.groupBy((entry) => entry.id),
   Rec.values,
-  Arr.filter(
-    (group) =>
-      group.length >= 2 &&
-      Fn.pipe(
-        group,
-        Arr.map((entry) => entry.file),
-        Arr.dedupe,
-      ).length >= 2,
-  ),
+  Arr.filter((group) => group.length >= 2),
   Arr.map(
     (group) =>
       `Message id "${Arr.headNonEmpty(group).id}" is defined ${group.length} times: ${Fn.pipe(

@@ -7,7 +7,7 @@ const userId = Domain.UserId.make("user-1");
 const firstArticleId = Domain.ArticleId.make("article-1");
 const secondArticleId = Domain.ArticleId.make("article-2");
 
-const emptyUser = (): Domain.UserAggregate => Domain.emptyUser(userId);
+const newUser = (): Domain.UserAggregate => Domain.newUser(userId);
 
 const toggle = (
   aggregate: Domain.UserAggregate,
@@ -32,8 +32,8 @@ describe("User bookmarks", () => {
         Domain.ExistingUser.make({ userId, bookmarkedArticleIds: [firstArticleId] }),
       ),
       existingTag: JSON.stringify(Domain.ExistingUser.ast).includes("ExistingUser"),
-      empty: emptyUser(),
-      firstInteraction: toggle(emptyUser(), firstArticleId).state,
+      empty: newUser(),
+      firstInteraction: toggle(newUser(), firstArticleId).state,
     }).toEqual({
       validUserId: true,
       invalidUserId: false,
@@ -58,7 +58,7 @@ describe("User bookmarks", () => {
   });
 
   test("toggles bookmarks independently", () => {
-    const firstBookmarked = toggle(emptyUser(), firstArticleId);
+    const firstBookmarked = toggle(newUser(), firstArticleId);
     const bothBookmarked = toggle(firstBookmarked, secondArticleId);
     const firstRemoved = toggle(bothBookmarked, firstArticleId);
 
@@ -83,14 +83,14 @@ describe("User bookmarks", () => {
     });
   });
 
-  test("reconstitutes bookmark history without pending events", () => {
-    const reconstituted = Domain.reconstituteUser(userId)([
+  test("replays bookmark history without pending events", () => {
+    const replayed = Domain.replayUser(userId)([
       Domain.ArticleBookmarked.make({ userId, articleId: firstArticleId }),
       Domain.ArticleBookmarked.make({ userId, articleId: secondArticleId }),
       Domain.ArticleBookmarkRemoved.make({ userId, articleId: firstArticleId }),
     ]);
 
-    expect(reconstituted).toEqual({
+    expect(replayed).toEqual({
       aggregateId: userId,
       state: Domain.ExistingUser.make({
         userId,

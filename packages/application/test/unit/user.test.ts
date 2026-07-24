@@ -21,7 +21,7 @@ import {
   UserQueryClient,
   UserQueryClientLive,
   articleCatalog,
-  bookmarkKey,
+  bookmarkProjectionKey,
   userBookmarkReceiptFromAggregate,
 } from "../../src/index.ts";
 
@@ -44,9 +44,9 @@ test("user rpc contracts, catalog, and empty receipts are explicit", () => {
     commandClientKey: UserCommandClient.key,
     queryClientKey: UserQueryClient.key,
     projectionId: BookmarkProjection.projectionId,
-    key: bookmarkKey(userId, articleId),
+    key: bookmarkProjectionKey(userId, articleId),
     catalogSize: articleCatalog.length,
-    emptyReceipt: userBookmarkReceiptFromAggregate(Domain.emptyUser(userId)),
+    emptyReceipt: userBookmarkReceiptFromAggregate(Domain.newUser(userId)),
     decodedList: Schema.decodeUnknownSync(ArticleList)({
       articles: [{ articleId, title: "Events Over State", bookmarked: false }],
     }),

@@ -1,7 +1,7 @@
 import { isLengthMember, isStaticCall, walkAst } from "../shared/ast.mjs";
 import { isRealFilename } from "../shared/filename.mjs";
 import { isViewFilename } from "../shared/mvc-ownership.mjs";
-import { webViewPath, webEsTsExampleRenderablePath } from "../shared/paths.mjs";
+import { webViewPath, webControlRenderablePath } from "../shared/paths.mjs";
 import { createRule } from "../shared/rule.mjs";
 
 export const mvcViewNoCardinalityDecisionsRuleName = "mvc-view-no-cardinality-decisions";
@@ -47,7 +47,7 @@ export const mvcViewNoCardinalityDecisions = createRule({
       !isRealFilename(filename) ||
       !isViewFilename(filename) ||
       !webViewPath(filename) ||
-      webEsTsExampleRenderablePath(filename)
+      webControlRenderablePath(filename)
     ) {
       return {};
     }

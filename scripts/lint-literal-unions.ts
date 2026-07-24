@@ -148,15 +148,7 @@ const duplicateUnionViolations = Fn.pipe(
   sites,
   Arr.groupBy(normalizedMembers),
   Rec.values,
-  Arr.filter(
-    (group) =>
-      group.length >= 2 &&
-      Fn.pipe(
-        group,
-        Arr.map((site) => site.file),
-        Arr.dedupe,
-      ).length >= 2,
-  ),
+  Arr.filter((group) => group.length >= 2),
   Arr.map(
     (group) =>
       `Duplicate literal union {${Fn.pipe(Arr.headNonEmpty(group).members, Arr.join(", "))}} defined at ${Fn.pipe(

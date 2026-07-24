@@ -11,17 +11,9 @@ const weakMatchers = new Set(["toBeDefined", "toBeFalsy", "toBeTruthy"]);
 const ratchet = {
   paths: [
     "packages/application/test/unit/counter.test.ts",
-    "packages/application/test/unit/identity.test.ts",
     "packages/application/test/unit/index.test.ts",
-    "packages/domain/test/unit/adventure.test.ts",
     "packages/domain/test/unit/counter.test.ts",
-    "packages/domain/test/unit/experience.test.ts",
-    "packages/domain/test/unit/identity.test.ts",
     "packages/test-support/test/unit/index.test.ts",
-    "packages/web/test/unit/adventure/adventure-4.test.ts",
-    "packages/web/test/unit/adventure/adventure-5.test.ts",
-    "packages/web/test/unit/browse/browse-6.test.ts",
-    "packages/web/test/unit/creator/creator-2.test.ts",
   ],
   patterns: [/^packages\/(?:application|domain|web)\/test\/e2e\/steps\/.+\.steps\.ts$/],
 };

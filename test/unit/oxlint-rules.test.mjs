@@ -18,10 +18,12 @@ const rules = esTsExamplePlugin.rules;
 
 const harmlessModule = "const value = 1;\nexport const result = value;\n";
 const workspaceRoot = process.cwd();
-const webModelPath = (stem) => `${workspaceRoot}/packages/web/src/models/${stem}.model.ts`;
-const webFactoryPath = (stem) => `${workspaceRoot}/packages/web/src/factories/${stem}.factory.ts`;
-const webViewPath = (stem, theme = "wayfinder") =>
-  `${workspaceRoot}/packages/web/src/views/${theme}/${stem}.view.tsx`;
+const webModelPath = (stem, layer = "controls") =>
+  `${workspaceRoot}/packages/web/src/models/${layer}/${stem}.model.ts`;
+const webFactoryPath = (stem, layer = "controls") =>
+  `${workspaceRoot}/packages/web/src/factories/${layer}/${stem}.factory.ts`;
+const webViewPath = (stem, layer = "controls") =>
+  `${workspaceRoot}/packages/web/src/views/${layer}/${stem}.view.tsx`;
 const webControllerPath = (stem) =>
   `${workspaceRoot}/packages/web/src/controllers/${stem}.controller.ts`;
 
@@ -89,27 +91,27 @@ describe("es-ts-example oxlint plugin", () => {
     valid: [
       {
         code: "export const PageModel = Schema.TaggedStruct('PageModel', {});",
-        filename: `${workspaceRoot}/packages/web/src/models/Page.model.ts`,
+        filename: webModelPath("Page", "pages"),
       },
       {
-        code: "export const EsTsExampleButtonView = () => <button>Save</button>;",
-        filename: webViewPath("EsTsExampleButton"),
+        code: "export const ButtonView = () => <button>Save</button>;",
+        filename: webViewPath("Button", "controls"),
       },
     ],
     invalid: [
       {
         code: "export const makePageModel = async () => model;",
-        filename: `${workspaceRoot}/packages/web/src/models/Page.model.ts`,
+        filename: webModelPath("Page", "pages"),
         errors: [{ message: /MVC models/ }],
       },
       {
         code: "const markup = `<button>Save</button>`;",
-        filename: `${workspaceRoot}/packages/web/src/models/Page.model.ts`,
+        filename: webModelPath("Page", "pages"),
         errors: [{ message: /MVC models/ }],
       },
       {
         code: "export const PageView = () => <button>Save</button>;",
-        filename: webViewPath("Page"),
+        filename: webViewPath("Page", "pages"),
         errors: [{ message: /MVC models/ }],
       },
     ],
@@ -118,16 +120,16 @@ describe("es-ts-example oxlint plugin", () => {
   tester.run("mvc-renderable-variants-use-tags", rules["mvc-renderable-variants-use-tags"], {
     valid: [
       {
-        code: "export const EsTsExamplePageShellModel = Schema.TaggedStruct('EsTsExamplePageShellModel', { layout: EsTsExampleLayoutModel });",
-        filename: `${workspaceRoot}/packages/web/src/models/EsTsExamplePageShell.model.ts`,
+        code: "export const PageShellModel = Schema.TaggedStruct('PageShellModel', { layout: LayoutModel });",
+        filename: `${workspaceRoot}/packages/web/src/models/controls/PageShell.model.ts`,
       },
       {
-        code: "export const EsTsExampleLayoutModel = Schema.TaggedStruct('EsTsExampleLayoutModel', { template: Schema.Literals(['app'] as const) });",
-        filename: `${workspaceRoot}/packages/web/src/models/EsTsExampleLayout.model.ts`,
+        code: "export const LayoutModel = Schema.TaggedStruct('LayoutModel', { template: Schema.Literals(['app'] as const) });",
+        filename: `${workspaceRoot}/packages/web/src/models/controls/Layout.model.ts`,
       },
       {
         code: "export const makeMessageModel = (input: { readonly tone?: 'info' | 'success' | 'error' }) => model;",
-        filename: `${workspaceRoot}/packages/web/src/factories/EsTsExampleLiveMessage.factory.ts`,
+        filename: `${workspaceRoot}/packages/web/src/factories/controls/LiveMessage.factory.ts`,
       },
       {
         code: "const FooAndBarView = Match.typeTags<FooAndBarModel, Html>()({ FooModel: FooView, BarModel: BarView });",
@@ -140,38 +142,38 @@ describe("es-ts-example oxlint plugin", () => {
     ],
     invalid: [
       {
-        code: "export const EsTsExampleLayoutModel = Schema.TaggedStruct('EsTsExampleLayoutModel', { template: Schema.Literals(['app', 'dashboard'] as const) });",
-        filename: `${workspaceRoot}/packages/web/src/models/EsTsExampleLayout.model.ts`,
+        code: "export const LayoutModel = Schema.TaggedStruct('LayoutModel', { template: Schema.Literals(['app', 'dashboard'] as const) });",
+        filename: `${workspaceRoot}/packages/web/src/models/controls/Layout.model.ts`,
         errors: [{ messageId: "modelSelector" }],
       },
       {
-        code: "export const EsTsExampleLayoutModel = Schema.TaggedStruct('EsTsExampleLayoutModel', { variant: Schema.Union(Schema.Literal('app'), Schema.Literal('dashboard')) });",
-        filename: `${workspaceRoot}/packages/web/src/models/EsTsExampleLayout.model.ts`,
+        code: "export const LayoutModel = Schema.TaggedStruct('LayoutModel', { variant: Schema.Union(Schema.Literal('app'), Schema.Literal('dashboard')) });",
+        filename: `${workspaceRoot}/packages/web/src/models/controls/Layout.model.ts`,
         errors: [{ messageId: "modelSelector" }],
       },
       {
-        code: "export const makeEsTsExampleLayoutModel = (input: { readonly layout?: 'app' | 'dashboard' }) => model;",
-        filename: `${workspaceRoot}/packages/web/src/factories/EsTsExampleLayout.factory.ts`,
+        code: "export const makeLayoutModel = (input: { readonly layout?: 'app' | 'dashboard' }) => model;",
+        filename: `${workspaceRoot}/packages/web/src/factories/controls/Layout.factory.ts`,
         errors: [{ messageId: "factorySelector" }],
       },
       {
         code: "const mainClassName = (input) => input.template === 'dashboard' ? 'drawer' : 'container';",
-        filename: `${workspaceRoot}/packages/web/src/factories/EsTsExampleLayout.factory.ts`,
+        filename: `${workspaceRoot}/packages/web/src/factories/controls/Layout.factory.ts`,
         errors: [{ messageId: "selectorBranch" }],
       },
       {
         code: "const mainClassName = (input) => input.layout == 'dashboard' ? 'drawer' : 'container';",
-        filename: `${workspaceRoot}/packages/web/src/factories/EsTsExampleLayout.factory.ts`,
+        filename: `${workspaceRoot}/packages/web/src/factories/controls/Layout.factory.ts`,
         errors: [{ messageId: "selectorBranch" }],
       },
       {
         code: "const LayoutView = (model) => model.variant !== 'app' ? <Dashboard /> : <App />;",
-        filename: webViewPath("EsTsExampleLayout"),
+        filename: webViewPath("Layout"),
         errors: [{ messageId: "selectorBranch" }],
       },
       {
-        code: "export const EsTsExampleLayoutView = (model) => Match.value(model.variant).pipe(Match.when('app', AppLayoutView), Match.exhaustive);",
-        filename: webViewPath("EsTsExampleLayout"),
+        code: "export const LayoutView = (model) => Match.value(model.variant).pipe(Match.when('app', AppLayoutView), Match.exhaustive);",
+        filename: webViewPath("Layout"),
         errors: [{ messageId: "selectorBranch" }],
       },
     ],
@@ -181,11 +183,11 @@ describe("es-ts-example oxlint plugin", () => {
     valid: [
       {
         code: "export const ButtonModel = Schema.TaggedStruct('ButtonModel', { tone: ButtonTone, label: Schema.String });",
-        filename: `${workspaceRoot}/packages/web/src/models/Button.model.ts`,
+        filename: `${workspaceRoot}/packages/web/src/models/controls/Button.model.ts`,
       },
       {
         code: "const baseClassName = 'btn'; export const makeButtonModel = (input: { readonly tone: ButtonTone }) => ButtonModel.make({ tone: input.tone });",
-        filename: `${workspaceRoot}/packages/web/src/factories/Button.factory.ts`,
+        filename: `${workspaceRoot}/packages/web/src/factories/controls/Button.factory.ts`,
       },
       {
         code: "const className = (model) => model.tone === 'primary' ? 'btn-primary' : 'btn-ghost'; export const ButtonView = (model) => <button className={className(model)} />;",
@@ -197,38 +199,38 @@ describe("es-ts-example oxlint plugin", () => {
       },
       {
         code: "export const ButtonModel = Schema.TaggedStruct('ButtonModel', { classNames: Schema.Array(Schema.String) });",
-        filename: `${workspaceRoot}/packages/web/src/models/Button.model.ts`,
+        filename: `${workspaceRoot}/packages/web/src/models/controls/Button.model.ts`,
       },
     ],
     invalid: [
       {
         code: "export const ButtonModel = Schema.TaggedStruct('ButtonModel', { className: Schema.String });",
-        filename: `${workspaceRoot}/packages/web/src/models/Button.model.ts`,
+        filename: `${workspaceRoot}/packages/web/src/models/controls/Button.model.ts`,
         errors: [{ message: /semantic state/ }],
       },
       {
         code: "export const ButtonModel = Schema.TaggedStruct('ButtonModel', { activeClassName: Schema.String });",
-        filename: `${workspaceRoot}/packages/web/src/models/Button.model.ts`,
+        filename: `${workspaceRoot}/packages/web/src/models/controls/Button.model.ts`,
         errors: [{ message: /activeClassName/ }],
       },
       {
         code: "export const ButtonModel = Schema.TaggedStruct('ButtonModel', { 'className': Schema.String });",
-        filename: `${workspaceRoot}/packages/web/src/models/Button.model.ts`,
+        filename: `${workspaceRoot}/packages/web/src/models/controls/Button.model.ts`,
         errors: [{ message: /className/ }],
       },
       {
         code: "export type ButtonModelInput = { readonly panelClassName?: string };",
-        filename: `${workspaceRoot}/packages/web/src/models/Button.model.ts`,
+        filename: `${workspaceRoot}/packages/web/src/models/controls/Button.model.ts`,
         errors: [{ message: /panelClassName/ }],
       },
       {
         code: "export const makeButtonModel = (input: { readonly className?: string }) => ButtonModel.make({ tone: 'primary' });",
-        filename: `${workspaceRoot}/packages/web/src/factories/Button.factory.ts`,
+        filename: `${workspaceRoot}/packages/web/src/factories/controls/Button.factory.ts`,
         errors: [{ message: /className/ }],
       },
       {
         code: "export const makeButtonModel = () => ButtonModel.make({ className: 'btn btn-primary' });",
-        filename: `${workspaceRoot}/packages/web/src/factories/Button.factory.ts`,
+        filename: `${workspaceRoot}/packages/web/src/factories/controls/Button.factory.ts`,
         errors: [{ message: /className/ }],
       },
     ],
@@ -325,7 +327,7 @@ describe("es-ts-example oxlint plugin", () => {
   tester.run("rendered-dom-contract", rules["rendered-dom-contract"], {
     valid: [
       {
-        code: "expect(html).toContain('data-component=\"EsTsExampleButton\"');",
+        code: "expect(html).toContain('data-component=\"Button\"');",
         filename: "/workspace/packages/web/test/unit/example.test.ts",
       },
     ],
@@ -359,38 +361,17 @@ describe("es-ts-example oxlint plugin", () => {
     ],
   });
 
-  tester.run("unit-test-architecture", rules["unit-test-architecture"], {
-    valid: [
-      {
-        code: "export const assertCounter = () => undefined;",
-        filename: "/workspace/packages/domain/test/unit/support/CounterAssertions.ts",
-      },
-    ],
-    invalid: [
-      {
-        code: "expect(value).toEqual(1);",
-        filename: "/workspace/packages/domain/test/unit/support/CounterAssertions.ts",
-        errors: [{ messageId: "supportAssertion" }],
-      },
-      {
-        code: "export const helpers = {};",
-        filename: "/workspace/packages/domain/test/unit/support/index.ts",
-        errors: [{ messageId: "supportBarrel" }],
-      },
-    ],
-  });
-
   tester.run("web-view-model-strings", rules["web-view-model-strings"], {
     valid: [
       {
         code: "export const ButtonView = (model) => <button title={model.title}>{model.label}</button>;",
-        filename: webViewPath("EsTsExampleButton"),
+        filename: webViewPath("Button"),
       },
     ],
     invalid: [
       {
         code: 'export const ButtonView = () => <button title="Save">Save</button>;',
-        filename: webViewPath("EsTsExampleButton"),
+        filename: webViewPath("Button"),
         errors: [{ messageId: "attribute" }, { messageId: "text" }],
       },
     ],
@@ -399,14 +380,14 @@ describe("es-ts-example oxlint plugin", () => {
   tester.run("web-ui-component-contracts", rules["web-ui-component-contracts"], {
     valid: [
       {
-        code: 'export const ButtonView = () => <button data-component="EsTsExampleButton" />;',
-        filename: webViewPath("EsTsExampleButton"),
+        code: 'export const ButtonView = () => <button data-component="Button" />;',
+        filename: webViewPath("Button"),
       },
     ],
     invalid: [
       {
         code: "import { Counter } from '@es-ts-example/domain'; export const ButtonView = () => <button />;",
-        filename: webViewPath("EsTsExampleButton"),
+        filename: webViewPath("Button"),
         errors: [{ messageId: "domainImport" }, { messageId: "dataComponent" }],
       },
     ],
@@ -421,54 +402,6 @@ describe("es-ts-example oxlint plugin", () => {
         code: "export * from './demoSeed.ts';",
         filename: "/workspace/packages/web/src/index.ts",
         errors: [{ messageId: "seedExport" }],
-      },
-    ],
-  });
-
-  tester.run("repo-path-policy", rules["repo-path-policy"], {
-    valid: [
-      {
-        code: "const path = '../local/file.ts';",
-        filename: "/workspace/packages/domain/src/example.ts",
-      },
-    ],
-    invalid: [
-      {
-        code: "const path = '../../../../outside';",
-        filename: "/workspace/packages/domain/src/example.ts",
-        errors: [{ messageId: "escape" }],
-      },
-    ],
-  });
-
-  tester.run("i18n-message-catalogs", rules["i18n-message-catalogs"], {
-    valid: [
-      {
-        code: "export const messages = { 'counter.title': { message: 'Counter' } };",
-        filename: "/workspace/packages/web/src/counter/counter.messages.ts",
-      },
-    ],
-    invalid: [
-      {
-        code: "export const messages = { 'counter.title': {}, 'counter.title': {} };",
-        filename: "/workspace/packages/web/src/counter/counter.messages.ts",
-        errors: [{ messageId: "duplicate" }],
-      },
-    ],
-  });
-
-  tester.run("literal-union-ownership", rules["literal-union-ownership"], {
-    valid: [
-      {
-        code: "const Status = Schema.Union(Schema.Literal('draft'), Schema.Literal('published'));",
-        filename: "/workspace/packages/domain/src/status.ts",
-      },
-    ],
-    invalid: [
-      {
-        code: "const Status = Schema.Union(Schema.Literal('draft'), Schema.Literal('published')); const Other = Schema.Union(Schema.Literal('draft'), Schema.Literal('published'));",
-        filename: "/workspace/packages/domain/src/status.ts",
-        errors: [{ messageId: "duplicate" }],
       },
     ],
   });
@@ -634,33 +567,180 @@ describe("es-ts-example oxlint plugin", () => {
     ],
   });
 
-  tester.run("mvc-controller-owns-one-controller", rules["mvc-controller-owns-one-controller"], {
+  tester.run("mvc-one-export-per-role-file", rules["mvc-one-export-per-role-file"], {
     valid: [
+      { code: harmlessModule, filename: "/workspace/not-web-source.ts" },
       {
         code: `export type Input = { readonly id: string };
 const helper = (value: string): string => value;
 export const getCreatorPageController = (input: Input) => helper(input.id);`,
         filename: webControllerPath("getCreatorPage"),
       },
-      { code: harmlessModule, filename: "/workspace/not-web-source.ts" },
+      {
+        code: `import * as Schema from "effect/Schema";
+
+const AlertHidden = Schema.TaggedStruct("AlertHidden", {});
+const AlertVisible = Schema.TaggedStruct("AlertVisible", {
+  message: Schema.String,
+});
+
+export const AlertModel = Schema.Union([AlertHidden, AlertVisible]);
+export type AlertModel = typeof AlertModel.Type;`,
+        filename: webModelPath("Alert"),
+      },
+      {
+        code: `import * as Schema from "effect/Schema";
+
+export const TextFieldModel = Schema.TaggedStruct("TextFieldModel", {
+  id: Schema.String,
+});
+export type TextFieldModel = typeof TextFieldModel.Type;`,
+        filename: webModelPath("TextField"),
+      },
+      {
+        code: `import { TextFieldModel } from "../../models/controls/TextField.model.ts";
+export const makeTextFieldModel = (input: { id: string }): TextFieldModel =>
+  TextFieldModel.make(input);`,
+        filename: webFactoryPath("TextField"),
+      },
+      {
+        code: `import { TextFieldModel } from "../../models/controls/TextField.model.ts";
+export const makeTextFieldModel = (input: { id: string }): TextFieldModel =>
+  TextFieldModel.make(input);
+export const cloneTextFieldModel = (model: TextFieldModel): TextFieldModel => model;
+const helper = (): string => "ok";`,
+        filename: webFactoryPath("TextField"),
+      },
+      {
+        code: `import type { TextFieldModel } from "../../models/controls/TextField.model.ts";
+import type { View } from "../../mvc/view.ts";
+export const TextFieldView: View<TextFieldModel> = (model) => <input />;`,
+        filename: webViewPath("TextField"),
+      },
     ],
     invalid: [
       {
         code: "export type Input = { readonly id: string };",
         filename: webControllerPath("getCreatorPage"),
-        errors: [{ messageId: "oneController", data: { count: "0" } }],
+        errors: [{ messageId: "controllerOneController", data: { count: "0" } }],
       },
       {
         code: `export const getCreatorPageController = () => model;
 export const postCreatorPageController = () => model;`,
         filename: webControllerPath("creatorPage"),
-        errors: [{ messageId: "oneController", data: { count: "2" } }],
+        errors: [{ messageId: "controllerOneController", data: { count: "2" } }],
       },
       {
         code: `export const getCreatorPageController = () => model;
 export const sharedHelper = () => value;`,
         filename: webControllerPath("getCreatorPage"),
-        errors: [{ messageId: "invalidExport" }],
+        errors: [{ messageId: "controllerInvalidExport" }],
+      },
+      {
+        code: `import * as Schema from "effect/Schema";
+
+export const TextFieldModel = Schema.TaggedStruct("TextFieldModel", {
+  id: Schema.String,
+});
+export const TextFieldExtraModel = Schema.TaggedStruct("TextFieldExtraModel", {
+  id: Schema.String,
+});
+export type TextFieldModel = typeof TextFieldModel.Type;`,
+        filename: webModelPath("TextField"),
+        errors: [{ messageId: "modelMultipleModels" }],
+      },
+      {
+        code: `import * as Schema from "effect/Schema";
+
+export const TextFieldHidden = Schema.TaggedStruct("TextFieldHidden", {});
+export const TextFieldModel = Schema.TaggedStruct("TextFieldModel", {
+  id: Schema.String,
+});
+export type TextFieldModel = typeof TextFieldModel.Type;`,
+        filename: webModelPath("TextField"),
+        errors: [{ messageId: "modelMultipleModels" }],
+      },
+      {
+        code: "export const makeTextFieldModel = () => TextFieldModel.make({});",
+        filename: webFactoryPath("TextField"),
+        errors: [{ messageId: "factoryMissingImport" }, { messageId: "factoryInvalidReturnType" }],
+      },
+      {
+        code: `import { TextFieldModel } from "../../models/controls/TextField.model.ts";
+export const makeTextFieldModel = (input: { id: string }): string =>
+  TextFieldModel.make(input).id;`,
+        filename: webFactoryPath("TextField"),
+        errors: [{ messageId: "factoryInvalidReturnType" }],
+      },
+      {
+        code: `import { TextFieldModel } from "../../models/controls/TextField.model.ts";
+export const makeTextFieldModel = (input: { id: string }) =>
+  TextFieldModel.make(input);`,
+        filename: webFactoryPath("TextField"),
+        errors: [{ messageId: "factoryInvalidReturnType" }],
+      },
+      {
+        code: `import { TextFieldModel } from "../../models/controls/TextField.model.ts";
+export const makeTextFieldModel = TextFieldModel.make;`,
+        filename: webFactoryPath("TextField"),
+        errors: [{ messageId: "factoryMissingConstructor" }, { messageId: "factoryInvalidExport" }],
+      },
+      {
+        code: `import { TextFieldModel } from "../../models/controls/TextField.model.ts";
+export type TextFieldInput = { id: string };
+export const makeTextFieldModel = (input: TextFieldInput): TextFieldModel =>
+  TextFieldModel.make(input);`,
+        filename: webFactoryPath("TextField"),
+        errors: [{ messageId: "factoryTypeExport" }],
+      },
+      {
+        code: `import { TextFieldModel } from "../../models/controls/TextField.model.ts";
+export { makeTextFieldModel } from "./other.factory.ts";`,
+        filename: webFactoryPath("TextField"),
+        errors: [
+          { messageId: "factoryMissingFactory" },
+          { messageId: "factoryMissingConstructor" },
+          { messageId: "factoryInvalidExport" },
+        ],
+      },
+      {
+        code: `import type { TextFieldModel } from "./TextField.model.ts";
+import type { View } from "../../mvc/view.ts";
+export const TextFieldView: View<TextFieldModel> = (model) => <input />;`,
+        filename: webViewPath("TextField"),
+        errors: [{ messageId: "viewInvalidModel" }],
+      },
+      {
+        code: `import type { TextFieldModel } from "../../models/controls/TextField.model.ts";
+import type { View } from "../../mvc/view.ts";
+export type TextFieldViewProps = { model: TextFieldModel };
+export const TextFieldView: View<TextFieldModel> = (model) => <input />;`,
+        filename: webViewPath("TextField"),
+        errors: [{ messageId: "viewTypeExport" }],
+      },
+      {
+        code: `import type { TextFieldModel } from "../../models/controls/TextField.model.ts";
+import type { View } from "../../mvc/view.ts";
+export interface TextFieldViewProps { model: TextFieldModel }
+export const TextFieldView: View<TextFieldModel> = (model) => <input />;`,
+        filename: webViewPath("TextField"),
+        errors: [{ messageId: "viewTypeExport" }],
+      },
+      {
+        code: `import type { TextFieldModel } from "../../models/controls/TextField.model.ts";
+import type { View } from "../../mvc/view.ts";
+export enum TextFieldViewState { Ready }
+export const TextFieldView: View<TextFieldModel> = (model) => <input />;`,
+        filename: webViewPath("TextField"),
+        errors: [{ messageId: "viewTypeExport" }],
+      },
+      {
+        code: `import type { TextFieldModel } from "../../models/controls/TextField.model.ts";
+import type { View } from "../../mvc/view.ts";
+export type { TextFieldModel };
+export const TextFieldView: View<TextFieldModel> = (model) => <input />;`,
+        filename: webViewPath("TextField"),
+        errors: [{ messageId: "viewTypeExport" }],
       },
     ],
   });
@@ -710,7 +790,7 @@ export const getCreatorPageController = () => makeCreatorPageModel(input);`,
     valid: [
       { code: harmlessModule, filename: webModelPath("CreatorPage") },
       { code: harmlessModule, filename: webFactoryPath("CreatorPage") },
-      { code: harmlessModule, filename: webViewPath("CreatorPage", "wayfinder") },
+      { code: harmlessModule, filename: webViewPath("CreatorPage", "pages") },
       { code: harmlessModule, filename: webControllerPath("creator") },
       { code: harmlessModule, filename: `${workspaceRoot}/packages/web/src/mvc/controller.ts` },
       { code: harmlessModule, filename: `${workspaceRoot}/packages/web/src/mvc/view.ts` },
@@ -727,28 +807,28 @@ export const getCreatorPageController = () => makeCreatorPageModel(input);`,
       },
       {
         code: harmlessModule,
-        filename: `${workspaceRoot}/packages/web/src/ui/EsTsExampleButton.model.ts`,
+        filename: `${workspaceRoot}/packages/web/src/ui/Button.model.ts`,
         errors: [{ message: /model file/ }],
       },
       {
         code: harmlessModule,
         filename: `${workspaceRoot}/packages/web/src/views/CreatorPage.view.tsx`,
-        errors: [{ messageId: "directViewPlacement" }],
+        errors: [{ messageId: "unlayeredViewPlacement" }],
       },
       {
         code: harmlessModule,
         filename: `${workspaceRoot}/packages/web/src/views/legacy/CreatorPage.view.tsx`,
-        errors: [{ messageId: "unknownViewTheme" }],
+        errors: [{ messageId: "unknownViewLayer" }],
       },
       {
         code: harmlessModule,
-        filename: `${workspaceRoot}/packages/web/src/views/wayfinder/nested/CreatorPage.view.tsx`,
+        filename: `${workspaceRoot}/packages/web/src/views/pages/nested/CreatorPage.view.tsx`,
         errors: [{ messageId: "nestedViewPlacement" }],
       },
       {
         code: harmlessModule,
         filename: `${workspaceRoot}/packages/web/src/creator/CreatorPage.view.tsx`,
-        errors: [{ messageId: "unknownViewTheme" }],
+        errors: [{ messageId: "unknownViewLayer" }],
       },
       {
         code: harmlessModule,
@@ -757,12 +837,12 @@ export const getCreatorPageController = () => makeCreatorPageModel(input);`,
       },
       {
         code: harmlessModule,
-        filename: `${workspaceRoot}/packages/web/src/models/nested/Page.model.ts`,
+        filename: `${workspaceRoot}/packages/web/src/models/controls/nested/Page.model.ts`,
         errors: [{ message: /model file/ }],
       },
       {
         code: harmlessModule,
-        filename: `${workspaceRoot}/packages/web/src/models/Page.factory.ts`,
+        filename: `${workspaceRoot}/packages/web/src/models/controls/Page.factory.ts`,
         errors: [{ message: /factory file/ }],
       },
       {
@@ -775,7 +855,7 @@ export const getCreatorPageController = () => makeCreatorPageModel(input);`,
 
   tester.run("mvc-model-requires-factory", rules["mvc-model-requires-factory"], {
     valid: [
-      { code: harmlessModule, filename: webModelPath("EsTsExampleTextField") },
+      { code: harmlessModule, filename: webModelPath("TextField") },
       { code: harmlessModule, filename: "/workspace/not-web-source.ts" },
     ],
     invalid: [
@@ -785,7 +865,7 @@ export const getCreatorPageController = () => makeCreatorPageModel(input);`,
         errors: [
           {
             messageId: "missingFactory",
-            data: { factoryFilename: "MissingFactoryStem999.factory.ts" },
+            data: { factoryFilename: "controls/MissingFactoryStem999.factory.ts" },
           },
         ],
       },
@@ -794,7 +874,7 @@ export const getCreatorPageController = () => makeCreatorPageModel(input);`,
 
   tester.run("mvc-model-requires-view", rules["mvc-model-requires-view"], {
     valid: [
-      { code: harmlessModule, filename: webModelPath("EsTsExampleTextField") },
+      { code: harmlessModule, filename: webModelPath("TextField") },
       { code: harmlessModule, filename: "/workspace/not-web-source.ts" },
     ],
     invalid: [
@@ -804,7 +884,10 @@ export const getCreatorPageController = () => makeCreatorPageModel(input);`,
         errors: [
           {
             messageId: "missingView",
-            data: { stem: "MissingViewStem999", theme: "wayfinder" },
+            data: {
+              importSource: "../../models/controls/MissingViewStem999.model.ts",
+              layer: "controls",
+            },
           },
         ],
       },
@@ -813,7 +896,7 @@ export const getCreatorPageController = () => makeCreatorPageModel(input);`,
 
   tester.run("mvc-view-requires-model-sibling", rules["mvc-view-requires-model-sibling"], {
     valid: [
-      { code: harmlessModule, filename: webViewPath("EsTsExampleTextField") },
+      { code: harmlessModule, filename: webViewPath("TextField") },
       { code: harmlessModule, filename: "/workspace/not-web-source.ts" },
     ],
     invalid: [
@@ -821,80 +904,14 @@ export const getCreatorPageController = () => makeCreatorPageModel(input);`,
         code: harmlessModule,
         filename: webViewPath("MissingModelStem999"),
         errors: [
-          { messageId: "missingModel", data: { modelFilename: "MissingModelStem999.model.ts" } },
+          {
+            messageId: "missingModel",
+            data: { modelFilename: "controls/MissingModelStem999.model.ts" },
+          },
         ],
       },
     ],
   });
-
-  tester.run(
-    "mvc-factory-owns-one-renderable-factory",
-    rules["mvc-factory-owns-one-renderable-factory"],
-    {
-      valid: [
-        { code: harmlessModule, filename: "/workspace/not-web-source.ts" },
-        {
-          code: `import { EsTsExampleTextFieldModel } from "../models/EsTsExampleTextField.model.ts";
-export const makeEsTsExampleTextFieldModel = (input: { id: string }): EsTsExampleTextFieldModel =>
-  EsTsExampleTextFieldModel.make(input);`,
-          filename: webFactoryPath("EsTsExampleTextField"),
-        },
-        {
-          code: `import { EsTsExampleTextFieldModel } from "../models/EsTsExampleTextField.model.ts";
-export const makeEsTsExampleTextFieldModel = (input: { id: string }): EsTsExampleTextFieldModel =>
-  EsTsExampleTextFieldModel.make(input);
-export const cloneEsTsExampleTextFieldModel = (model: EsTsExampleTextFieldModel): EsTsExampleTextFieldModel => model;
-const helper = (): string => "ok";`,
-          filename: webFactoryPath("EsTsExampleTextField"),
-        },
-      ],
-      invalid: [
-        {
-          code: "export const makeEsTsExampleTextFieldModel = () => EsTsExampleTextFieldModel.make({});",
-          filename: webFactoryPath("EsTsExampleTextField"),
-          errors: [{ messageId: "missingImport" }, { messageId: "invalidReturnType" }],
-        },
-        {
-          code: `import { EsTsExampleTextFieldModel } from "../models/EsTsExampleTextField.model.ts";
-export const makeEsTsExampleTextFieldModel = (input: { id: string }): string =>
-  EsTsExampleTextFieldModel.make(input).id;`,
-          filename: webFactoryPath("EsTsExampleTextField"),
-          errors: [{ messageId: "invalidReturnType" }],
-        },
-        {
-          code: `import { EsTsExampleTextFieldModel } from "../models/EsTsExampleTextField.model.ts";
-export const makeEsTsExampleTextFieldModel = (input: { id: string }) =>
-  EsTsExampleTextFieldModel.make(input);`,
-          filename: webFactoryPath("EsTsExampleTextField"),
-          errors: [{ messageId: "invalidReturnType" }],
-        },
-        {
-          code: `import { EsTsExampleTextFieldModel } from "../models/EsTsExampleTextField.model.ts";
-export const makeEsTsExampleTextFieldModel = EsTsExampleTextFieldModel.make;`,
-          filename: webFactoryPath("EsTsExampleTextField"),
-          errors: [{ messageId: "missingConstructor" }, { messageId: "invalidExport" }],
-        },
-        {
-          code: `import { EsTsExampleTextFieldModel } from "../models/EsTsExampleTextField.model.ts";
-export type EsTsExampleTextFieldInput = { id: string };
-export const makeEsTsExampleTextFieldModel = (input: EsTsExampleTextFieldInput): EsTsExampleTextFieldModel =>
-  EsTsExampleTextFieldModel.make(input);`,
-          filename: webFactoryPath("EsTsExampleTextField"),
-          errors: [{ messageId: "typeExport" }],
-        },
-        {
-          code: `import { EsTsExampleTextFieldModel } from "../models/EsTsExampleTextField.model.ts";
-export { makeEsTsExampleTextFieldModel } from "./other.factory.ts";`,
-          filename: webFactoryPath("EsTsExampleTextField"),
-          errors: [
-            { messageId: "missingFactory" },
-            { messageId: "missingConstructor" },
-            { messageId: "invalidExport" },
-          ],
-        },
-      ],
-    },
-  );
 
   tester.run(
     "mvc-factory-user-facing-strings-use-i18n",
@@ -904,12 +921,12 @@ export { makeEsTsExampleTextFieldModel } from "./other.factory.ts";`,
         { code: harmlessModule, filename: "/workspace/not-web-source.ts" },
         {
           code: `const model = {
-  _tag: "EsTsExampleTextFieldModel",
+  _tag: "TextFieldModel",
   id: "title",
   label: webI18n._({ id: "creator.title.field.label" }),
   name: "title",
 };`,
-          filename: webFactoryPath("EsTsExampleTextField"),
+          filename: webFactoryPath("TextField"),
         },
       ],
       invalid: [
@@ -918,7 +935,7 @@ export { makeEsTsExampleTextFieldModel } from "./other.factory.ts";`,
   documentTitle: "Create experience",
   label: \`Experience title\`,
 };`,
-          filename: webFactoryPath("EsTsExampleTextField"),
+          filename: webFactoryPath("TextField"),
           errors: [{ messageId: "hardcoded" }, { messageId: "hardcoded" }],
         },
       ],
@@ -931,14 +948,14 @@ export { makeEsTsExampleTextFieldModel } from "./other.factory.ts";`,
       {
         code: `import * as Schema from "effect/Schema";
 
-const EsTsExampleAlertHidden = Schema.TaggedStruct("EsTsExampleAlertHidden", {});
-const EsTsExampleAlertVisible = Schema.TaggedStruct("EsTsExampleAlertVisible", {
+const AlertHidden = Schema.TaggedStruct("AlertHidden", {});
+const AlertVisible = Schema.TaggedStruct("AlertVisible", {
   message: Schema.String,
 });
 
-export const EsTsExampleAlertModel = Schema.Union([EsTsExampleAlertHidden, EsTsExampleAlertVisible]);
-export type EsTsExampleAlertModel = typeof EsTsExampleAlertModel.Type;`,
-        filename: webModelPath("EsTsExampleAlert"),
+export const AlertModel = Schema.Union([AlertHidden, AlertVisible]);
+export type AlertModel = typeof AlertModel.Type;`,
+        filename: webModelPath("Alert"),
       },
       {
         code: `import * as Schema from "effect/Schema";
@@ -959,66 +976,13 @@ export type CreatorBlockEditorPageModel = typeof CreatorBlockEditorPageModel.Typ
       {
         code: `import * as Schema from "effect/Schema";
 
-export const EsTsExampleTextFieldModel = Schema.TaggedStruct("EsTsExampleTextFieldModel", {
+export const TextFieldModel = Schema.TaggedStruct("TextFieldModel", {
   id: Schema.String,
   required: Schema.Boolean,
 });
-export type EsTsExampleTextFieldModel = typeof EsTsExampleTextFieldModel.Type;`,
-        filename: webModelPath("EsTsExampleTextField"),
+export type TextFieldModel = typeof TextFieldModel.Type;`,
+        filename: webModelPath("TextField"),
         errors: [{ messageId: "booleanField" }],
-      },
-    ],
-  });
-
-  tester.run("mvc-model-owns-one-renderable-model", rules["mvc-model-owns-one-renderable-model"], {
-    valid: [
-      { code: harmlessModule, filename: "/workspace/not-web-source.ts" },
-      {
-        code: `import * as Schema from "effect/Schema";
-
-const EsTsExampleAlertHidden = Schema.TaggedStruct("EsTsExampleAlertHidden", {});
-const EsTsExampleAlertVisible = Schema.TaggedStruct("EsTsExampleAlertVisible", {
-  message: Schema.String,
-});
-
-export const EsTsExampleAlertModel = Schema.Union([EsTsExampleAlertHidden, EsTsExampleAlertVisible]);
-export type EsTsExampleAlertModel = typeof EsTsExampleAlertModel.Type;`,
-        filename: webModelPath("EsTsExampleAlert"),
-      },
-      {
-        code: `import * as Schema from "effect/Schema";
-
-export const EsTsExampleTextFieldModel = Schema.TaggedStruct("EsTsExampleTextFieldModel", {
-  id: Schema.String,
-});
-export type EsTsExampleTextFieldModel = typeof EsTsExampleTextFieldModel.Type;`,
-        filename: webModelPath("EsTsExampleTextField"),
-      },
-    ],
-    invalid: [
-      {
-        code: `import * as Schema from "effect/Schema";
-
-export const EsTsExampleTextFieldModel = Schema.TaggedStruct("EsTsExampleTextFieldModel", {
-  id: Schema.String,
-});
-export const EsTsExampleTextFieldExtraModel = Schema.TaggedStruct("EsTsExampleTextFieldExtraModel", {
-  id: Schema.String,
-});
-export type EsTsExampleTextFieldModel = typeof EsTsExampleTextFieldModel.Type;`,
-        filename: webModelPath("EsTsExampleTextField"),
-        errors: [{ messageId: "multipleModels" }],
-      },
-      {
-        code: `import * as Schema from "effect/Schema";
-
-export const EsTsExampleTextFieldHidden = Schema.TaggedStruct("EsTsExampleTextFieldHidden", {});
-export const EsTsExampleTextFieldModel = Schema.TaggedStruct("EsTsExampleTextFieldModel", {
-  id: Schema.String,
-});
-export type EsTsExampleTextFieldModel = typeof EsTsExampleTextFieldModel.Type;`,
-        filename: webModelPath("EsTsExampleTextField"),
-        errors: [{ messageId: "multipleModels" }],
       },
     ],
   });
@@ -1028,125 +992,72 @@ export type EsTsExampleTextFieldModel = typeof EsTsExampleTextFieldModel.Type;`,
       { code: harmlessModule, filename: "/workspace/not-web-source.ts" },
       {
         code: `import type { View } from "../../mvc/view.ts";
-import type { EsTsExampleTextFieldModel } from "../../models/EsTsExampleTextField.model.ts";
+import type { TextFieldModel } from "../../models/controls/TextField.model.ts";
 
-const maxAttribute = (model: EsTsExampleTextFieldModel): { readonly max?: number } =>
+const maxAttribute = (model: TextFieldModel): { readonly max?: number } =>
   model.max === undefined ? {} : { max: model.max };
 
-export const EsTsExampleTextFieldView: View<EsTsExampleTextFieldModel> = (model) => (
+export const TextFieldView: View<TextFieldModel> = (model) => (
   <input {...maxAttribute(model)} />
 );`,
-        filename: webViewPath("EsTsExampleTextField"),
+        filename: webViewPath("TextField"),
       },
       {
         code: `import type { View } from "../../mvc/view.ts";
-import type { CreatorStepsPageModel } from "../../models/CreatorStepsPage.model.ts";
+import type { CreatorStepsPageModel } from "../../models/pages/CreatorStepsPage.model.ts";
 
 export const CreatorStepsPageView: View<CreatorStepsPageModel> = (model) =>
   model._tag === "CreatorStepsPagePopulatedSteps" ? <ol /> : <p>{model.emptyMessage}</p>;`,
-        filename: webViewPath("CreatorStepsPage"),
+        filename: webViewPath("CreatorStepsPage", "pages"),
       },
     ],
     invalid: [
       {
         code: `import * as Arr from "effect/Array";
 import type { View } from "../../mvc/view.ts";
-import type { CreatorStepsPageModel } from "../../models/CreatorStepsPage.model.ts";
+import type { CreatorStepsPageModel } from "../../models/pages/CreatorStepsPage.model.ts";
 
 export const CreatorStepsPageView: View<CreatorStepsPageModel> = (model) =>
   Arr.isReadonlyArrayEmpty(model.steps) ? <p>Empty</p> : <ol />;`,
-        filename: webViewPath("CreatorStepsPage"),
+        filename: webViewPath("CreatorStepsPage", "pages"),
         errors: [{ messageId: "cardinalityDecision" }],
       },
       {
         code: `import * as Arr from "effect/Array";
 import type { View } from "../../mvc/view.ts";
-import type { CreatorStepsPageModel } from "../../models/CreatorStepsPage.model.ts";
+import type { CreatorStepsPageModel } from "../../models/pages/CreatorStepsPage.model.ts";
 
 export const CreatorStepsPageView: View<CreatorStepsPageModel> = (model) =>
   Arr.isReadonlyArrayNonEmpty(model.steps) ? <ol /> : <p>Empty</p>;`,
-        filename: webViewPath("CreatorStepsPage"),
+        filename: webViewPath("CreatorStepsPage", "pages"),
         errors: [{ messageId: "cardinalityDecision" }],
       },
       {
         code: `import type { View } from "../../mvc/view.ts";
-import type { CreatorStepsPageModel } from "../../models/CreatorStepsPage.model.ts";
+import type { CreatorStepsPageModel } from "../../models/pages/CreatorStepsPage.model.ts";
 
 export const CreatorStepsPageView: View<CreatorStepsPageModel> = (model) =>
   model.steps.length === 0 ? <p>Empty</p> : <ol />;`,
-        filename: webViewPath("CreatorStepsPage"),
+        filename: webViewPath("CreatorStepsPage", "pages"),
         errors: [{ messageId: "cardinalityDecision" }],
       },
       {
         code: `import type { View } from "../../mvc/view.ts";
-import type { CreatorStepsPageModel } from "../../models/CreatorStepsPage.model.ts";
+import type { CreatorStepsPageModel } from "../../models/pages/CreatorStepsPage.model.ts";
 
 export const CreatorStepsPageView: View<CreatorStepsPageModel> = (model) =>
   model.steps.length > 0 ? <ol /> : <p>Empty</p>;`,
-        filename: webViewPath("CreatorStepsPage"),
+        filename: webViewPath("CreatorStepsPage", "pages"),
         errors: [{ messageId: "cardinalityDecision" }],
       },
       {
         code: `import type { View } from "../../mvc/view.ts";
-import type { CreatorStepsPageModel } from "../../models/CreatorStepsPage.model.ts";
+import type { CreatorStepsPageModel } from "../../models/pages/CreatorStepsPage.model.ts";
 
 export const CreatorStepsPageView: View<CreatorStepsPageModel> = (model) =>
   !model.steps.length ? <p>Empty</p> : <ol />;`,
-        filename: webViewPath("CreatorStepsPage"),
+        filename: webViewPath("CreatorStepsPage", "pages"),
         errors: [{ messageId: "cardinalityDecision" }],
-      },
-    ],
-  });
-
-  tester.run("mvc-view-owns-one-renderable-view", rules["mvc-view-owns-one-renderable-view"], {
-    valid: [
-      { code: harmlessModule, filename: "/workspace/not-web-source.ts" },
-      {
-        code: `import type { EsTsExampleTextFieldModel } from "../../models/EsTsExampleTextField.model.ts";
-import type { View } from "../../mvc/view.ts";
-export const EsTsExampleTextFieldView: View<EsTsExampleTextFieldModel> = (model) => <input />;`,
-        filename: webViewPath("EsTsExampleTextField"),
-      },
-    ],
-    invalid: [
-      {
-        code: `import type { EsTsExampleTextFieldModel } from "./EsTsExampleTextField.model.ts";
-import type { View } from "../../mvc/view.ts";
-export const EsTsExampleTextFieldView: View<EsTsExampleTextFieldModel> = (model) => <input />;`,
-        filename: webViewPath("EsTsExampleTextField"),
-        errors: [{ messageId: "invalidModel" }],
-      },
-      {
-        code: `import type { EsTsExampleTextFieldModel } from "../../models/EsTsExampleTextField.model.ts";
-import type { View } from "../../mvc/view.ts";
-export type EsTsExampleTextFieldViewProps = { model: EsTsExampleTextFieldModel };
-export const EsTsExampleTextFieldView: View<EsTsExampleTextFieldModel> = (model) => <input />;`,
-        filename: webViewPath("EsTsExampleTextField"),
-        errors: [{ messageId: "typeExport" }],
-      },
-      {
-        code: `import type { EsTsExampleTextFieldModel } from "../../models/EsTsExampleTextField.model.ts";
-import type { View } from "../../mvc/view.ts";
-export interface EsTsExampleTextFieldViewProps { model: EsTsExampleTextFieldModel }
-export const EsTsExampleTextFieldView: View<EsTsExampleTextFieldModel> = (model) => <input />;`,
-        filename: webViewPath("EsTsExampleTextField"),
-        errors: [{ messageId: "typeExport" }],
-      },
-      {
-        code: `import type { EsTsExampleTextFieldModel } from "../../models/EsTsExampleTextField.model.ts";
-import type { View } from "../../mvc/view.ts";
-export enum EsTsExampleTextFieldViewState { Ready }
-export const EsTsExampleTextFieldView: View<EsTsExampleTextFieldModel> = (model) => <input />;`,
-        filename: webViewPath("EsTsExampleTextField"),
-        errors: [{ messageId: "typeExport" }],
-      },
-      {
-        code: `import type { EsTsExampleTextFieldModel } from "../../models/EsTsExampleTextField.model.ts";
-import type { View } from "../../mvc/view.ts";
-export type { EsTsExampleTextFieldModel };
-export const EsTsExampleTextFieldView: View<EsTsExampleTextFieldModel> = (model) => <input />;`,
-        filename: webViewPath("EsTsExampleTextField"),
-        errors: [{ messageId: "typeExport" }],
       },
     ],
   });

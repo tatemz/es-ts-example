@@ -2,22 +2,62 @@ import { expect, test } from "bun:test";
 import * as Domain from "@es-ts-example/domain";
 import { propertyTestParameters } from "@es-ts-example/test-support/PropertyTest";
 import * as Arr from "effect/Array";
-import * as Fn from "effect/Function";
+import * as Option from "effect/Option";
 import * as FastCheck from "effect/testing/FastCheck";
-import { counterReadFromAggregate } from "../../src/index.ts";
+import { counterSummaryOf } from "../../src/index.ts";
 
 const counterId = Domain.CounterId.make("counter-property");
 
-const counterEvent = (): Domain.CounterEvent => Domain.CounterCreated.make({ counterId });
+/**
+ * Any event in any order, including orders the decisions would never write.
+ * A read model must survive logs it did not author.
+ */
+const anyCounterLog = (): FastCheck.Arbitrary<ReadonlyArray<Domain.CounterEvent>> =>
+  FastCheck.array(
+    FastCheck.constantFrom<Domain.CounterEvent>(
+      Domain.CounterCreated.make({ counterId }),
+      Domain.CounterIncremented.make({ counterId }),
+      Domain.CounterDecremented.make({ counterId }),
+      Domain.CounterDisabled.make({ counterId }),
+    ),
+    { minLength: 1, maxLength: 24 },
+  );
 
-test("property: counter reads use the reconstituted aggregate version", () => {
+test("property: a summary exists exactly when the log created the counter", () => {
   FastCheck.assert(
-    FastCheck.property(FastCheck.array(FastCheck.boolean(), { minLength: 1 }), (items) => {
-      const events = Fn.pipe(items, Arr.map(counterEvent));
-      const aggregate = Domain.reconstituteCounter(counterId)(events);
-      const read = counterReadFromAggregate(aggregate);
+    FastCheck.property(anyCounterLog(), (events) => {
+      const created = Arr.some(events, (event) => event._tag === "CounterCreated");
 
-      expect(read.version).toBe(Arr.length(events));
+      expect(Option.isSome(counterSummaryOf(Domain.replayCounter(counterId)(events)))).toBe(
+        created,
+      );
+    }),
+    propertyTestParameters,
+  );
+});
+
+test("property: a summary reports the replayed aggregate version", () => {
+  FastCheck.assert(
+    FastCheck.property(anyCounterLog(), (events) => {
+      const summary = counterSummaryOf(Domain.replayCounter(counterId)(events));
+
+      expect(Option.map(summary, (value) => value.version)).toEqual(
+        Option.map(summary, () => Arr.length(events)),
+      );
+    }),
+    propertyTestParameters,
+  );
+});
+
+test("property: a summary is disabled exactly when the log disabled the counter", () => {
+  FastCheck.assert(
+    FastCheck.property(anyCounterLog(), (events) => {
+      const summary = counterSummaryOf(Domain.replayCounter(counterId)(events));
+      const frozen = Domain.counterStateFrom(events)._tag === "DisabledCounter";
+
+      expect(Option.map(summary, (value) => value._tag === "DisabledCounterSummary")).toEqual(
+        Option.map(summary, () => frozen),
+      );
     }),
     propertyTestParameters,
   );
