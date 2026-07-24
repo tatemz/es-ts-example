@@ -10,7 +10,7 @@ import { incremented } from "../../support/Counter.ts";
 import {
   eventsFromRows,
   type FactRow,
-  rowsIncludeStreamMetadata,
+  rowsIncludeStoredEventEnvelope,
   storedEventsFromRows,
 } from "./CounterFacts.ts";
 import {
@@ -79,14 +79,10 @@ export const assertStreamContainsFacts = (
   Effect.gen(function* () {
     const records = yield* recordsForAssertion(state, aggregateId);
 
-    if (rowsIncludeStreamMetadata(rows)) {
-      const stripped = Fn.pipe(
-        records,
-        Arr.map(({ metadata: _metadata, ...rest }) => rest),
-      );
+    if (rowsIncludeStoredEventEnvelope(rows)) {
       const expected = yield* storedEventsFromRows(aggregateId, rows);
 
-      assert.deepEqual(stripped, expected);
+      assert.deepEqual(records, expected);
       return;
     }
 

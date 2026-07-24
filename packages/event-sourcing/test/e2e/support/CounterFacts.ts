@@ -98,7 +98,7 @@ export const storedEventsFromRows = (
     ),
   );
 
-export const rowsIncludeStreamMetadata = (rows: ReadonlyArray<FactRow>): boolean =>
+export const rowsIncludeStoredEventEnvelope = (rows: ReadonlyArray<FactRow>): boolean =>
   Fn.pipe(
     rows,
     Arr.some(

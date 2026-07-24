@@ -23,13 +23,12 @@ import {
   articleCatalog,
   bookmarkKey,
   userBookmarkReceiptFromAggregate,
-  userMetadata,
 } from "../../src/index.ts";
 
 const userId = Domain.UserId.make("user-1");
 const articleId = Domain.ArticleId.make("events-over-state");
 
-test("user rpc contracts, metadata, catalog, and empty receipts are explicit", () => {
+test("user rpc contracts, catalog, and empty receipts are explicit", () => {
   const payload: ToggleArticleBookmarkCommand = {
     _tag: "ToggleArticleBookmark",
     userId,
@@ -48,12 +47,6 @@ test("user rpc contracts, metadata, catalog, and empty receipts are explicit", (
     key: bookmarkKey(userId, articleId),
     catalogSize: articleCatalog.length,
     emptyReceipt: userBookmarkReceiptFromAggregate(Domain.emptyUser(userId)),
-    defaultMetadata: userMetadata(payload),
-    explicitMetadata: userMetadata({
-      ...payload,
-      correlationId: "correlation",
-      causationId: "causation",
-    }),
     decodedList: Schema.decodeUnknownSync(ArticleList)({
       articles: [{ articleId, title: "Events Over State", bookmarked: false }],
     }),
@@ -86,14 +79,6 @@ test("user rpc contracts, metadata, catalog, and empty receipts are explicit", (
     key: "6:user-1:events-over-state",
     catalogSize: 5,
     emptyReceipt: { userId, bookmarkedArticleIds: [] },
-    defaultMetadata: {
-      correlationId: "ToggleArticleBookmark:user-1",
-      causationId: undefined,
-    },
-    explicitMetadata: {
-      correlationId: "correlation",
-      causationId: "causation",
-    },
     decodedList: {
       articles: [{ articleId, title: "Events Over State", bookmarked: false }],
     },

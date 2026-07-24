@@ -64,7 +64,6 @@ export const narrowDomainEventStore = <Event extends Domain.DomainEvent, StoreEr
         aggregateId: command.aggregateId,
         expectedVersion: command.expectedVersion,
         events: command.events,
-        metadata: command.metadata,
       }),
       (records) => Effect.forEach(records, decodeEvent(eventSchema)),
     ),

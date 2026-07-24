@@ -2,7 +2,7 @@ import * as Domain from "@es-ts-example/domain";
 import * as Effect from "effect/Effect";
 import * as Match from "effect/Match";
 import { DomainEventStore, narrowDomainEventStore } from "../services.ts";
-import { type CounterCommand, counterMetadata } from "./commands.ts";
+import type { CounterCommand } from "./commands.ts";
 import { makeListCountersHandler } from "./queries/index.ts";
 import { counterReadFromAggregate } from "./readModels.ts";
 import { type CounterEventStore, makeCounterRepository } from "./repository.ts";
@@ -36,7 +36,7 @@ export const makeCounterCommandHandler = (store: CounterEventStore) => {
     Effect.gen(function* () {
       const counter = yield* repository.load(command.counterId);
 
-      return yield* repository.commit(decide(command, counter), counterMetadata(command));
+      return yield* repository.commit(decide(command, counter));
     });
 };
 

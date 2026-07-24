@@ -16,7 +16,6 @@ import {
   CounterQueryClientLive,
   CreateCounter,
   type CreateCounterCommand,
-  counterMetadata,
   counterReadFromAggregate,
   DecrementCounter,
   DisableCounter,
@@ -60,21 +59,6 @@ test("counter rpc contracts expose command and query procedures", () => {
   expect(() => Schema.decodeUnknownSync(CounterList)({})).toThrow();
   expect(CounterCommandClient.key).toBe("CounterCommandClient");
   expect(CounterQueryClient.key).toBe("CounterQueryClient");
-  expect(counterMetadata({ _tag: "CreateCounter", counterId })).toEqual({
-    correlationId: "CreateCounter:counter-1",
-    causationId: undefined,
-  });
-  expect(
-    counterMetadata({
-      _tag: "CreateCounter",
-      counterId,
-      correlationId: "corr-1",
-      causationId: "cause-1",
-    }),
-  ).toEqual({
-    correlationId: "corr-1",
-    causationId: "cause-1",
-  });
 });
 
 testEffect("counter handlers write events and list projected counters", () =>

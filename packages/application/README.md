@@ -21,7 +21,7 @@ Command handlers own orchestration:
 1. Decode command input at the boundary.
 2. Load the aggregate through a repository.
 3. Run the pure domain method.
-4. Commit the accepted decision with command metadata.
+4. Commit the accepted decision.
 5. Return a receipt or read model shape for callers.
 
 Do not hide domain choices in handlers. If a branch decides business validity,

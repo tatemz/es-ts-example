@@ -5,17 +5,15 @@ import * as Result from "effect/Result";
 import type { Aggregate, AggregateId, Reducer } from "./aggregate.ts";
 import { reconstituteAggregate } from "./aggregate.ts";
 import type { Decision } from "./decision.ts";
-import type { AppendMetadata, EventStore, ExpectedVersionConflict } from "./event-store.ts";
+import type { EventStore, ExpectedVersionConflict } from "./event-store.ts";
 
 export type AggregateRepository<State, Event, Id extends string = string, StoreError = never> = {
   readonly load: (aggregateId: Id) => Effect.Effect<Aggregate<State, Event, Id>, StoreError>;
   readonly save: (
     aggregate: Aggregate<State, Event, Id>,
-    metadata?: AppendMetadata,
   ) => Effect.Effect<Aggregate<State, Event, Id>, ExpectedVersionConflict | StoreError>;
   readonly commit: <Error>(
     decision: Decision<Aggregate<State, Event, Id>, Error>,
-    metadata?: AppendMetadata,
   ) => Effect.Effect<Aggregate<State, Event, Id>, Error | ExpectedVersionConflict | StoreError>;
 };
 
@@ -48,14 +46,12 @@ export const makeAggregateRepository = <
     );
   const save = (
     aggregate: Aggregate<State, Event, Id>,
-    metadata?: AppendMetadata,
   ): Effect.Effect<Aggregate<State, Event, Id>, ExpectedVersionConflict | StoreError> =>
     Fn.pipe(
       options.store.append({
         aggregateId: streamNameFor(aggregate.aggregateId),
         expectedVersion: aggregate.version - aggregate.pendingEvents.length,
         events: aggregate.pendingEvents,
-        metadata,
       }),
       Effect.map(() => ({
         ...aggregate,
@@ -66,7 +62,7 @@ export const makeAggregateRepository = <
   return {
     load,
     save,
-    commit: (decision, metadata) =>
-      Result.isFailure(decision) ? Effect.fail(decision.failure) : save(decision.success, metadata),
+    commit: (decision) =>
+      Result.isFailure(decision) ? Effect.fail(decision.failure) : save(decision.success),
   };
 };

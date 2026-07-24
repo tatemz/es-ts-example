@@ -1,5 +1,4 @@
 import * as Arr from "effect/Array";
-import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Fn from "effect/Function";
@@ -10,44 +9,18 @@ import * as Stream from "effect/Stream";
 import type { AggregateId, AggregateVersion } from "./aggregate.ts";
 
 export type EventStoreSequenceNumber = number;
-export type CorrelationId = string;
-export type CausationId = string;
-
-export type EventMetadata = {
-  readonly correlationId: CorrelationId;
-  readonly causationId?: CausationId;
-  readonly occurredAt: DateTime.Utc;
-};
 
 export type StoredEvent<Event> = {
   readonly aggregateId: AggregateId;
   readonly aggregateVersion: AggregateVersion;
   readonly eventStoreSequenceNumber: EventStoreSequenceNumber;
   readonly event: Event;
-  /**
-   * Optional in the type so historical seed data and lightweight test fixtures
-   * can omit it; the in-memory store *always* stamps metadata on append, so
-   * any record produced through the normal write path will have it set.
-   */
-  readonly metadata?: EventMetadata;
-};
-
-export type AppendMetadata = {
-  readonly correlationId: CorrelationId;
-  readonly causationId?: CausationId;
 };
 
 export type AppendEvents<Event> = {
   readonly aggregateId: AggregateId;
   readonly expectedVersion: AggregateVersion;
   readonly events: ReadonlyArray<Event>;
-  /**
-   * Optional in the framework so existing callers compile. Production callers
-   * should always set a real `correlationId`; when omitted, the in-memory
-   * store stamps a synthetic one (`anonymous-<sequence>`) so traceability is
-   * still total — never `undefined`.
-   */
-  readonly metadata?: AppendMetadata;
 };
 
 /**
@@ -96,19 +69,12 @@ const eventStorePersistenceFailure = (error: unknown): EventStorePersistenceFail
     message: error instanceof Error ? error.message : String(error),
   });
 
-const EventMetadata = Schema.Struct({
-  correlationId: Schema.String,
-  causationId: Schema.optionalKey(Schema.String),
-  occurredAt: Schema.DateTimeUtcFromString,
-});
-
 const StoredEvent = <Event>(event: Schema.Codec<Event, unknown>) =>
   Schema.Struct({
     aggregateId: Schema.String,
     aggregateVersion: Schema.Number,
     eventStoreSequenceNumber: Schema.Number,
     event,
-    metadata: Schema.optionalKey(EventMetadata),
   });
 
 const StoredEvents = <Event>(event: Schema.Codec<Event, unknown>) =>
@@ -160,26 +126,16 @@ export const storedEventsForAppend = <Event>(options: {
   readonly command: AppendEvents<Event>;
   readonly startVersion: AggregateVersion;
   readonly startSequenceNumber: EventStoreSequenceNumber;
-  readonly occurredAt: DateTime.Utc;
-}): ReadonlyArray<StoredEvent<Event>> => {
-  const correlationId =
-    options.command.metadata?.correlationId ?? `anonymous-${options.startSequenceNumber + 1}`;
-  const causationId = options.command.metadata?.causationId;
-  return Fn.pipe(
+}): ReadonlyArray<StoredEvent<Event>> =>
+  Fn.pipe(
     options.command.events,
     Arr.map((event, index) => ({
       aggregateId: options.command.aggregateId,
       aggregateVersion: options.startVersion + index + 1,
       eventStoreSequenceNumber: options.startSequenceNumber + index + 1,
       event,
-      metadata: {
-        correlationId,
-        occurredAt: options.occurredAt,
-        ...(causationId === undefined ? {} : { causationId }),
-      },
     })),
   );
-};
 
 export const makeInMemoryEventStore = <Event>(
   seed?: ReadonlyArray<StoredEvent<Event>>,
@@ -225,12 +181,10 @@ export const makeInMemoryEventStore = <Event>(
             );
           }
 
-          const occurredAt = yield* DateTime.now;
           const stored = storedEventsForAppend({
             command,
             startVersion: actualVersion,
             startSequenceNumber: Arr.length(records),
-            occurredAt,
           });
           yield* Ref.update(storedEventsRef, Arr.appendAll(stored));
 
@@ -330,12 +284,10 @@ export const makeJsonFileEventStore = <Event>(
             );
           }
 
-          const occurredAt = yield* DateTime.now;
           const stored = storedEventsForAppend({
             command,
             startVersion: actualVersion,
             startSequenceNumber: Arr.length(records),
-            occurredAt,
           });
           yield* writeJsonFileRecords(event, fs, path, Fn.pipe(records, Arr.appendAll(stored)));
 

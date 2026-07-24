@@ -4,28 +4,10 @@ import * as BunServices from "@effect/platform-bun/BunServices";
 import * as Arr from "effect/Array";
 import * as Effect from "effect/Effect";
 import * as Fn from "effect/Function";
-import * as Option from "effect/Option";
 import * as Ref from "effect/Ref";
 import * as Result from "effect/Result";
 import * as Stream from "effect/Stream";
 import * as EventSourcing from "../../src/index.ts";
-
-const at = <A>(records: ReadonlyArray<A>, index: number): A | undefined =>
-  Fn.pipe(records, Arr.get(index), Option.getOrUndefined);
-
-const metadataAt = <Event>(
-  records: ReadonlyArray<EventSourcing.StoredEvent<Event>>,
-  index: number,
-): EventSourcing.EventMetadata | undefined =>
-  Fn.pipe(records, Arr.get(index), Option.getOrUndefined)?.metadata;
-
-const stripMetadata = <Event>(
-  records: ReadonlyArray<EventSourcing.StoredEvent<Event>>,
-): ReadonlyArray<Omit<EventSourcing.StoredEvent<Event>, "metadata">> =>
-  Fn.pipe(
-    records,
-    Arr.map(({ metadata: _metadata, ...rest }) => rest),
-  );
 import {
   CounterEvent,
   type CounterEvent as CounterEventType,
@@ -152,7 +134,7 @@ describe("event-sourcing aggregate core", () => {
 });
 
 describe("in-memory event store", () => {
-  testEffect("appends events and fetches them by aggregate id with stream metadata", () =>
+  testEffect("appends events and fetches their stored-event envelopes", () =>
     Effect.gen(function* () {
       const store = yield* EventSourcing.makeInMemoryEventStore<CounterEventType>();
       yield* store.append({
@@ -168,7 +150,7 @@ describe("in-memory event store", () => {
 
       const result = yield* store.fetch({ aggregateId: "counter-1" });
 
-      expect(stripMetadata(result)).toEqual([
+      expect(result).toEqual([
         {
           aggregateId: "counter-1",
           aggregateVersion: 1,
@@ -182,13 +164,6 @@ describe("in-memory event store", () => {
           event: incremented(2),
         },
       ]);
-      expect(
-        Fn.pipe(
-          result,
-          Arr.every((record) => record.metadata !== undefined),
-        ),
-      ).toBe(true);
-      expect(at(result, 0)?.metadata?.occurredAt).toHaveProperty("_tag", "Utc");
     }),
   );
 
@@ -279,39 +254,6 @@ describe("in-memory event store", () => {
     }),
   );
 
-  testEffect("stamps a synthetic correlation id when caller omits metadata", () =>
-    Effect.gen(function* () {
-      const store = yield* EventSourcing.makeInMemoryEventStore<CounterEventType>();
-      yield* store.append({
-        aggregateId: "counter-1",
-        expectedVersion: 0,
-        events: [created()],
-      });
-
-      const result = yield* store.fetch({ aggregateId: "counter-1" });
-
-      expect(metadataAt(result, 0)?.correlationId).toBe("anonymous-1");
-      expect(metadataAt(result, 0)?.causationId).toBeUndefined();
-    }),
-  );
-
-  testEffect("uses caller-supplied correlation and causation ids when provided", () =>
-    Effect.gen(function* () {
-      const store = yield* EventSourcing.makeInMemoryEventStore<CounterEventType>();
-      yield* store.append({
-        aggregateId: "counter-1",
-        expectedVersion: 0,
-        events: [created()],
-        metadata: { correlationId: "trace-42", causationId: "command-7" },
-      });
-
-      const result = yield* store.fetch({ aggregateId: "counter-1" });
-
-      expect(metadataAt(result, 0)?.correlationId).toBe("trace-42");
-      expect(metadataAt(result, 0)?.causationId).toBe("command-7");
-    }),
-  );
-
   testEffect("fetchAll streams every event in global order", () =>
     Effect.gen(function* () {
       const store = yield* EventSourcing.makeInMemoryEventStore<CounterEventType>();
@@ -395,7 +337,7 @@ describe("json file event store", () => {
       const reloaded = yield* makeJsonFileCounterEventStore(path);
       const result = yield* reloaded.fetch({ aggregateId: "counter-1" });
 
-      expect(stripMetadata(result)).toEqual([
+      expect(result).toEqual([
         {
           aggregateId: "counter-1",
           aggregateVersion: 1,
@@ -429,7 +371,7 @@ describe("json file event store", () => {
         })
         .pipe(Effect.flip);
 
-      expect(stripMetadata(events)).toEqual([
+      expect(events).toEqual([
         {
           aggregateId: "counter-1",
           aggregateVersion: 1,
@@ -457,7 +399,7 @@ describe("json file event store", () => {
 
       const result = yield* Stream.runCollect(store.fetchAll({}));
 
-      expect(stripMetadata(result)).toEqual([
+      expect(result).toEqual([
         {
           aggregateId: "counter-1",
           aggregateVersion: 1,
@@ -516,34 +458,6 @@ describe("json file event store", () => {
       });
     }),
   );
-
-  testEffect("fails when persisted stream metadata is missing required fields", () =>
-    Effect.gen(function* () {
-      const path = filePath();
-      yield* Effect.promise(() =>
-        Bun.write(
-          path,
-          JSON.stringify([
-            {
-              aggregateId: "counter-1",
-              aggregateVersion: 1,
-              eventStoreSequenceNumber: 1,
-              event: created(),
-              metadata: {},
-            },
-          ]),
-        ),
-      );
-      const store = yield* makeJsonFileCounterEventStore(path);
-
-      const error = yield* store.fetch({ aggregateId: "counter-1" }).pipe(Effect.flip);
-
-      expect(error).toMatchObject({
-        _tag: "EventStorePersistenceFailure",
-        message: expect.stringContaining("correlationId"),
-      });
-    }),
-  );
 });
 
 describe("aggregate repository", () => {
@@ -593,24 +507,17 @@ describe("aggregate repository", () => {
     }),
   );
 
-  testEffect("commits accepted decisions with metadata", () =>
+  testEffect("commits accepted decisions", () =>
     Effect.gen(function* () {
       const store = yield* EventSourcing.makeInMemoryEventStore<CounterEventType>();
       const repository = makeCounterRepository(store);
       const changed = applyNewCounterEvent(incremented(3))(yield* repository.load("counter-1"));
 
-      const committed = yield* repository.commit(EventSourcing.accept(changed), {
-        correlationId: "command-1",
-        causationId: "request-1",
-      });
+      const committed = yield* repository.commit(EventSourcing.accept(changed));
       const records = yield* store.fetch({ aggregateId: "counter-1" });
 
       expect(committed.pendingEvents).toEqual([]);
       expect(records).toHaveLength(1);
-      expect(records[0]?.metadata).toMatchObject({
-        correlationId: "command-1",
-        causationId: "request-1",
-      });
     }),
   );
 

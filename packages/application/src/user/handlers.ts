@@ -1,7 +1,7 @@
 import * as Domain from "@es-ts-example/domain";
 import * as Effect from "effect/Effect";
 import { DomainEventStore, narrowDomainEventStore } from "../services.ts";
-import { type UserCommand, userMetadata } from "./commands.ts";
+import type { UserCommand } from "./commands.ts";
 import { makeListArticlesHandler } from "./queries/index.ts";
 import { userBookmarkReceiptFromAggregate } from "./readModels.ts";
 import { makeUserRepository, type UserEventStore } from "./repository.ts";
@@ -24,7 +24,7 @@ export const makeUserCommandHandler = (store: UserEventStore) => {
     Effect.gen(function* () {
       const user = yield* repository.load(command.userId);
 
-      return yield* repository.commit(decide(command, user), userMetadata(command));
+      return yield* repository.commit(decide(command, user));
     });
 };
 
