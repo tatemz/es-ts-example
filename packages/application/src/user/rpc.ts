@@ -2,7 +2,7 @@ import * as EventStore from "@es-ts-example/event-sourcing/event-store";
 import * as Schema from "effect/Schema";
 import * as Rpc from "effect/unstable/rpc/Rpc";
 import * as RpcGroup from "effect/unstable/rpc/RpcGroup";
-import { ToggleArticleBookmarkCommand } from "./commands/index.ts";
+import { ToggleArticleBookmarkCommand } from "./commands.ts";
 import { ListArticlesQuery } from "./queries/index.ts";
 import { ArticleList, UserBookmarkReceipt } from "./readModels.ts";
 

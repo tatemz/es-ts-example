@@ -10,7 +10,7 @@ import {
   DomainEventStore,
   ListArticles,
   makeListArticlesHandler,
-  makeToggleArticleBookmarkHandler,
+  makeUserCommandHandler,
   ToggleArticleBookmark,
   type ToggleArticleBookmarkCommand,
   UserBookmarkReceipt,
@@ -109,14 +109,14 @@ test("user rpc contracts, metadata, catalog, and empty receipts are explicit", (
 testEffect("list articles combines the static catalog with the bookmark projection", () =>
   Effect.gen(function* () {
     const store = yield* EventStore.makeInMemoryEventStore<Domain.UserEvent>();
-    const toggle = makeToggleArticleBookmarkHandler(store);
+    const handle = makeUserCommandHandler(store);
     const listArticles = makeListArticlesHandler(store);
     const query = { _tag: "ListArticles" as const, userId };
 
     const untouched = yield* listArticles(query);
-    const first = yield* toggle({ _tag: "ToggleArticleBookmark", userId, articleId });
+    const first = yield* handle({ _tag: "ToggleArticleBookmark", userId, articleId });
     const bookmarked = yield* listArticles(query);
-    const second = yield* toggle({ _tag: "ToggleArticleBookmark", userId, articleId });
+    const second = yield* handle({ _tag: "ToggleArticleBookmark", userId, articleId });
     const removed = yield* listArticles(query);
 
     expect({

@@ -2,12 +2,9 @@ import { expect, test } from "bun:test";
 import * as Domain from "@es-ts-example/domain";
 import * as EventStore from "@es-ts-example/event-sourcing/event-store";
 import { testEffect } from "@es-ts-example/test-support/TestEffect";
-import * as Arr from "effect/Array";
 import * as Effect from "effect/Effect";
-import * as Fn from "effect/Function";
 import * as Schema from "effect/Schema";
 import {
-  applyCounterListEvent,
   CounterCommand,
   CounterCommandClient,
   CounterCommandClientLive,
@@ -15,7 +12,6 @@ import {
   CounterCommandReceipt,
   CounterDomainError,
   CounterList,
-  CounterListProjection,
   CounterQueryClient,
   CounterQueryClientLive,
   CreateCounter,
@@ -27,14 +23,12 @@ import {
   DomainEventStore,
   IncrementCounter,
   ListCounters,
-  makeCreateCounterHandler,
-  makeDecrementCounterHandler,
-  makeDisableCounterHandler,
-  makeIncrementCounterHandler,
+  makeCounterCommandHandler,
   makeListCountersHandler,
 } from "../../src/index.ts";
 
 const counterId = Domain.CounterId.make("counter-1");
+const secondCounterId = Domain.CounterId.make("counter-2");
 
 test("counter rpc contracts expose command and query procedures", () => {
   const createPayload: CreateCounterCommand = { _tag: "CreateCounter", counterId };
@@ -66,7 +60,6 @@ test("counter rpc contracts expose command and query procedures", () => {
   expect(() => Schema.decodeUnknownSync(CounterList)({})).toThrow();
   expect(CounterCommandClient.key).toBe("CounterCommandClient");
   expect(CounterQueryClient.key).toBe("CounterQueryClient");
-  expect(CounterListProjection.projectionId).toBe("counter-list");
   expect(counterMetadata({ _tag: "CreateCounter", counterId })).toEqual({
     correlationId: "CreateCounter:counter-1",
     causationId: undefined,
@@ -87,16 +80,14 @@ test("counter rpc contracts expose command and query procedures", () => {
 testEffect("counter handlers write events and list projected counters", () =>
   Effect.gen(function* () {
     const store = yield* EventStore.makeInMemoryEventStore<Domain.CounterEvent>();
-    const createCounter = makeCreateCounterHandler(store);
-    const incrementCounter = makeIncrementCounterHandler(store);
-    const decrementCounter = makeDecrementCounterHandler(store);
-    const disableCounter = makeDisableCounterHandler(store);
+    const handle = makeCounterCommandHandler(store);
     const listCounters = makeListCountersHandler(store);
 
-    yield* createCounter({ _tag: "CreateCounter", counterId });
-    const incremented = yield* incrementCounter({ _tag: "IncrementCounter", counterId });
-    const decremented = yield* decrementCounter({ _tag: "DecrementCounter", counterId });
-    const disabled = yield* disableCounter({ _tag: "DisableCounter", counterId });
+    yield* handle({ _tag: "CreateCounter", counterId });
+    const incremented = yield* handle({ _tag: "IncrementCounter", counterId });
+    const decremented = yield* handle({ _tag: "DecrementCounter", counterId });
+    const disabled = yield* handle({ _tag: "DisableCounter", counterId });
+    yield* handle({ _tag: "CreateCounter", counterId: secondCounterId });
     const projection = yield* listCounters();
 
     expect(incremented.state).toEqual(
@@ -114,11 +105,17 @@ testEffect("counter handlers write events and list projected counters", () =>
         status: "disabled",
         version: 4,
       },
+      {
+        counterId: secondCounterId,
+        value: 0,
+        status: "active",
+        version: 1,
+      },
     ]);
   }),
 );
 
-test("counter read models cover empty, active, disabled, and projected changes", () => {
+test("counter read models cover empty, active, and disabled aggregates", () => {
   const created = counterReadFromAggregate(Domain.emptyCounter(counterId));
   const active = counterReadFromAggregate(
     Domain.recordCounterEvent(
@@ -135,48 +132,10 @@ test("counter read models cover empty, active, disabled, and projected changes",
       Domain.CounterDisabled.make({ counterId }),
     ),
   );
-  const projected = Fn.pipe(
-    [
-      Domain.CounterCreated.make({ counterId }),
-      Domain.CounterIncremented.make({ counterId }),
-      Domain.CounterDecremented.make({ counterId }),
-      Domain.CounterDisabled.make({ counterId }),
-    ],
-    Arr.reduce({ counters: [] }, applyCounterListEvent),
-  );
-  const secondCounterId = Domain.CounterId.make("counter-2");
-  const multiCounterProjection = Fn.pipe(
-    [
-      Domain.CounterCreated.make({ counterId }),
-      Domain.CounterIncremented.make({ counterId }),
-      Domain.CounterIncremented.make({ counterId }),
-      Domain.CounterCreated.make({ counterId: secondCounterId }),
-      Domain.CounterDisabled.make({ counterId }),
-      Domain.CounterIncremented.make({ counterId }),
-    ],
-    Arr.reduce({ counters: [] }, applyCounterListEvent),
-  );
-  const incrementBeforeCreateProjection = applyCounterListEvent(
-    { counters: [] },
-    Domain.CounterIncremented.make({ counterId }),
-  );
-
-  expect({ created, active, disabled, projected }).toEqual({
+  expect({ created, active, disabled }).toEqual({
     created: { counterId, value: 0, status: "active", version: 0 },
     active: { counterId, value: 0, status: "active", version: 1 },
     disabled: { counterId, value: 0, status: "disabled", version: 2 },
-    projected: {
-      counters: [{ counterId, value: 0, status: "disabled", version: 4 }],
-    },
-  });
-  expect(multiCounterProjection).toEqual({
-    counters: [
-      { counterId, value: 3, status: "disabled", version: 5 },
-      { counterId: secondCounterId, value: 0, status: "active", version: 1 },
-    ],
-  });
-  expect(incrementBeforeCreateProjection).toEqual({
-    counters: [{ counterId, value: 1, status: "active", version: 1 }],
   });
 });
 

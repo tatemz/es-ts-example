@@ -8,7 +8,7 @@ import {
   DecrementCounterCommand,
   DisableCounterCommand,
   IncrementCounterCommand,
-} from "./commands/index.ts";
+} from "./commands.ts";
 import { CounterCommandReceipt, CounterList } from "./readModels.ts";
 
 export const CounterDomainError = Schema.Union([

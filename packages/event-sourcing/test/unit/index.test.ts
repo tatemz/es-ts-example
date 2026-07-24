@@ -593,6 +593,42 @@ describe("aggregate repository", () => {
     }),
   );
 
+  testEffect("commits accepted decisions with metadata", () =>
+    Effect.gen(function* () {
+      const store = yield* EventSourcing.makeInMemoryEventStore<CounterEventType>();
+      const repository = makeCounterRepository(store);
+      const changed = applyNewCounterEvent(incremented(3))(yield* repository.load("counter-1"));
+
+      const committed = yield* repository.commit(EventSourcing.accept(changed), {
+        correlationId: "command-1",
+        causationId: "request-1",
+      });
+      const records = yield* store.fetch({ aggregateId: "counter-1" });
+
+      expect(committed.pendingEvents).toEqual([]);
+      expect(records).toHaveLength(1);
+      expect(records[0]?.metadata).toMatchObject({
+        correlationId: "command-1",
+        causationId: "request-1",
+      });
+    }),
+  );
+
+  testEffect("surfaces rejected decisions without saving", () =>
+    Effect.gen(function* () {
+      const store = yield* EventSourcing.makeInMemoryEventStore<CounterEventType>();
+      const repository = makeCounterRepository(store);
+
+      const rejection = yield* repository
+        .commit(EventSourcing.reject("CounterClosed"))
+        .pipe(Effect.flip);
+      const records = yield* store.fetch({ aggregateId: "counter-1" });
+
+      expect(rejection).toBe("CounterClosed");
+      expect(records).toEqual([]);
+    }),
+  );
+
   testEffect("saves pending events without fetching them back", () =>
     Effect.gen(function* () {
       const fetchCountRef = yield* Ref.make(0);

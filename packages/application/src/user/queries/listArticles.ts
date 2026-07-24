@@ -1,5 +1,4 @@
 import * as Domain from "@es-ts-example/domain";
-import type * as EventStore from "@es-ts-example/event-sourcing/event-store";
 import * as EventSourcingProjection from "@es-ts-example/event-sourcing/projection";
 import * as Arr from "effect/Array";
 import * as Effect from "effect/Effect";
@@ -13,6 +12,7 @@ import {
   type BookmarkProjectionState,
   initialBookmarkProjectionState,
 } from "../readModels.ts";
+import type { UserEventStore } from "../repository.ts";
 
 export const ListArticlesQuery = Schema.TaggedStruct("ListArticles", {
   userId: Domain.UserId,
@@ -31,17 +31,15 @@ export const BookmarkProjection = EventSourcingProjection.makeProjection<
   selectEvent: (event) => (Schema.is(Domain.UserEvent)(event) ? Option.some(event) : Option.none()),
 });
 
-export const makeListArticlesHandler =
-  <StoreError>(store: EventStore.EventStore<Domain.UserEvent, StoreError>) =>
-  (query: ListArticlesQuery) =>
-    Fn.pipe(
-      store.fetchAll({}),
-      Stream.map((record) => record.event),
-      Stream.runCollect,
-      Effect.map((events) =>
-        articleCatalogList(
-          EventSourcingProjection.foldProjection(BookmarkProjection)(Arr.fromIterable(events)),
-          query.userId,
-        ),
+export const makeListArticlesHandler = (store: UserEventStore) => (query: ListArticlesQuery) =>
+  Fn.pipe(
+    store.fetchAll({}),
+    Stream.map((record) => record.event),
+    Stream.runCollect,
+    Effect.map((events) =>
+      articleCatalogList(
+        EventSourcingProjection.foldProjection(BookmarkProjection)(Arr.fromIterable(events)),
+        query.userId,
       ),
-    );
+    ),
+  );

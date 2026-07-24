@@ -20,8 +20,8 @@ Command handlers own orchestration:
 
 1. Decode command input at the boundary.
 2. Load the aggregate through a repository.
-3. Run the pure domain decision with `runDecision`.
-4. Save pending events with command metadata.
+3. Run the pure domain method.
+4. Commit the accepted decision with command metadata.
 5. Return a receipt or read model shape for callers.
 
 Do not hide domain choices in handlers. If a branch decides business validity,
@@ -32,8 +32,9 @@ move it into `packages/domain`.
 Domain decisions return `Result<Aggregate, TaggedInvariant>`. Application
 handlers preserve that invariant in the Effect error channel and add concrete
 infrastructure errors such as `ExpectedVersionConflict` and event-store errors.
-`runDecision` performs the Result-to-Effect bridge; it does not wrap the domain
-failure. See `packages/domain/README.md` for the invariant policy.
+Repository `commit` performs the Result-to-Effect bridge and saves accepted
+decisions; it does not wrap domain failures. See `packages/domain/README.md` for
+the invariant policy.
 
 ## RPC And Read Models
 

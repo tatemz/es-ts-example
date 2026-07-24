@@ -10,10 +10,7 @@ import { Bdd } from "effect-bdd";
 import {
   type CounterCommandError,
   type CounterRead,
-  makeCreateCounterHandler,
-  makeDecrementCounterHandler,
-  makeDisableCounterHandler,
-  makeIncrementCounterHandler,
+  makeCounterCommandHandler,
   makeListCountersHandler,
 } from "../../../src/index.ts";
 import { assertCounterIsActive, assertCounterValue } from "../support/Assertions.ts";
@@ -69,7 +66,7 @@ const createCounter = (state: CounterScenarioState): Effect.Effect<CounterScenar
   Effect.flatMap(expectStore(state), (store) =>
     recordCommandResult(
       state,
-      makeCreateCounterHandler(store)({ _tag: "CreateCounter", counterId }),
+      makeCounterCommandHandler(store)({ _tag: "CreateCounter", counterId }),
     ),
   );
 
@@ -79,7 +76,7 @@ const incrementCounter = (
   Effect.flatMap(expectStore(state), (store) =>
     recordCommandResult(
       state,
-      makeIncrementCounterHandler(store)({ _tag: "IncrementCounter", counterId }),
+      makeCounterCommandHandler(store)({ _tag: "IncrementCounter", counterId }),
     ),
   );
 
@@ -100,7 +97,7 @@ const decrementCounter = (
   Effect.flatMap(expectStore(state), (store) =>
     recordCommandResult(
       state,
-      makeDecrementCounterHandler(store)({ _tag: "DecrementCounter", counterId }),
+      makeCounterCommandHandler(store)({ _tag: "DecrementCounter", counterId }),
     ),
   );
 
@@ -108,19 +105,22 @@ const disableCounter = (state: CounterScenarioState): Effect.Effect<CounterScena
   Effect.flatMap(expectStore(state), (store) =>
     recordCommandResult(
       state,
-      makeDisableCounterHandler(store)({ _tag: "DisableCounter", counterId }),
+      makeCounterCommandHandler(store)({ _tag: "DisableCounter", counterId }),
     ),
   );
 
 const projectedCounter = (state: CounterScenarioState): Effect.Effect<CounterRead, string> =>
   Effect.flatMap(expectStore(state), (store) =>
-    Effect.flatMap(makeListCountersHandler(store)(), (projection) => {
-      const counter = Fn.pipe(projection.counters, Arr.head, Option.getOrUndefined);
+    makeListCountersHandler(store)().pipe(
+      Effect.mapError((error) => error.message),
+      Effect.flatMap((projection) => {
+        const counter = Fn.pipe(projection.counters, Arr.head, Option.getOrUndefined);
 
-      return counter === undefined
-        ? reject("Expected the counter to be projected.")
-        : Effect.succeed(counter);
-    }),
+        return counter === undefined
+          ? reject("Expected the counter to be projected.")
+          : Effect.succeed(counter);
+      }),
+    ),
   );
 
 const count = Bdd.capture("count", Schema.FiniteFromString);

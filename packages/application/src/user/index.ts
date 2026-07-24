@@ -1,6 +1,6 @@
 export * from "./articleCatalog.ts";
 export * from "./clientLive.ts";
-export * from "./commands/index.ts";
+export * from "./commands.ts";
 export * from "./handlers.ts";
 export * from "./queries/index.ts";
 export * from "./readModels.ts";
