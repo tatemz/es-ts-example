@@ -64,7 +64,7 @@ architecture guidance.
 Documentation should explain boundaries, workflows, invariants, and
 current-state traps. Do not restate the tree, types, exports, or scripts.
 
-## Effect v4 Beta Traps
+## Effect v4 RC Traps
 
 - `Arr.filterMap` callbacks return `Result`, not `Option`. Use `Arr.filter` plus
   `Arr.map`, or return `Result` values.
@@ -73,6 +73,8 @@ current-state traps. Do not restate the tree, types, exports, or scripts.
 - Schema and branded `.make` constructors validate and may throw. Do not call
   them in module-scope constants: mutation can then crash module loading. Use a
   type-ascribed literal (`no-fallible-module-scope-make` enforces this).
+  Tagged-union `.make({})` also injects `_tag` for empty members. Decode those
+  values with `Schema.decodeUnknownOption` instead of trusting `.make`.
 - `no-native-standard-library` prefers Effect collection and string helpers.
   Their APIs differ from native methods; for example, `Str.matchAll` returns an
   `IterableIterator` and `Str.split` is curried.

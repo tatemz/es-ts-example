@@ -604,6 +604,13 @@ export const makeTextFieldModel = (input: { id: string }): TextFieldModel =>
         filename: webFactoryPath("TextField"),
       },
       {
+        code: `import * as Schema from "effect/Schema";
+import { TextFieldModel } from "../../models/controls/TextField.model.ts";
+export const makeTextFieldModel = (input: { id: string }): TextFieldModel =>
+  Schema.decodeUnknownSync(TextFieldModel)(input);`,
+        filename: webFactoryPath("TextField"),
+      },
+      {
         code: `import { TextFieldModel } from "../../models/controls/TextField.model.ts";
 export const makeTextFieldModel = (input: { id: string }): TextFieldModel =>
   TextFieldModel.make(input);

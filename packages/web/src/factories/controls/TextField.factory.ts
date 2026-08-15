@@ -1,3 +1,5 @@
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 import { TextFieldModel } from "../../models/controls/TextField.model.ts";
 
 type TextFieldInput = {
@@ -15,12 +17,16 @@ const makePresentation = (errorMessage: string | undefined): TextFieldModel["pre
     : { _tag: "TextFieldPresentationError", message: errorMessage };
 
 export const makeTextFieldModel = (input: TextFieldInput): TextFieldModel =>
-  TextFieldModel.make({
-    _tag: "TextFieldModel",
-    id: input.id,
-    label: input.label,
-    name: input.name,
-    presentation: makePresentation(input.errorMessage),
-    value: input.value,
-    ...(input.placeholder === undefined ? {} : { placeholder: input.placeholder }),
-  });
+  TextFieldModel.make(
+    Option.getOrThrow(
+      Schema.decodeUnknownOption(TextFieldModel)({
+        _tag: "TextFieldModel",
+        id: input.id,
+        label: input.label,
+        name: input.name,
+        presentation: makePresentation(input.errorMessage),
+        value: input.value,
+        ...(input.placeholder === undefined ? {} : { placeholder: input.placeholder }),
+      }),
+    ),
+  );

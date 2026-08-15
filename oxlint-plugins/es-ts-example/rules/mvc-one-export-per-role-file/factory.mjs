@@ -135,8 +135,14 @@ const importsOwnedModel = (program, modelName, layer, stem) =>
     }),
   );
 
-const programCallsOwnedConstructor = (sourceCode, node, modelName) =>
-  new RegExp(`\\b${modelName}\\.make\\s*\\(`).test(sourceCode.getText(node));
+const programCallsOwnedConstructor = (sourceCode, node, modelName) => {
+  const source = sourceCode.getText(node);
+
+  return (
+    new RegExp(`\\b${modelName}\\.make\\s*\\(`).test(source) ||
+    new RegExp(`decodeUnknownSync\\s*\\(\\s*${modelName}\\s*\\)`).test(source)
+  );
+};
 
 const ownedFactoryBindings = (bindings, factoryName) =>
   Fn.pipe(
@@ -198,7 +204,7 @@ export const factoryRole = {
     factoryMissingImport:
       "Factory files must import the owned model schema from `../../models/{{layer}}/{{stem}}.model.ts`.",
     factoryMissingConstructor:
-      "Factory files must construct the owned model with `{{modelName}}.make(...)`.",
+      "Factory files must construct the owned model with `{{modelName}}.make(...)` or `Schema.decodeUnknownSync({{modelName}})(...)`.",
     factoryTypeExport:
       "Factory files must not export types; keep type definitions private or in models.",
   },

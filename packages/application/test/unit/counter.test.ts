@@ -12,7 +12,7 @@ import {
   CounterCommandError,
   CounterCommandReceipt,
   CounterDomainError,
-  CounterList,
+  type CounterList,
   CounterQueryClient,
   CounterQueryClientLive,
   type CounterSummary,
@@ -51,7 +51,8 @@ test("counter rpc contracts expose command and query procedures", () => {
     createPayload,
   );
   expect(Schema.decodeUnknownSync(CounterCommandReceipt)(receipt)).toEqual(receipt);
-  expect(Schema.decodeUnknownSync(CounterList)(list)).toEqual(list);
+  expect(Schema.decodeUnknownSync(ListCounters.successSchema)(list)).toEqual(list);
+  expect(Schema.decodeUnknownSync(ListCounters.payloadSchema)({})).toEqual({});
   expect(
     Schema.decodeUnknownSync(CounterDomainError)(Domain.counterMaximumReached(counterId)),
   ).toEqual(Domain.counterMaximumReached(counterId));
@@ -63,8 +64,13 @@ test("counter rpc contracts expose command and query procedures", () => {
   expect(Schema.is(CounterCommand)({ _tag: "DecrementCounter", counterId })).toBe(true);
   expect(Schema.is(CounterCommand)({ _tag: "DisableCounter", counterId })).toBe(true);
   expect(Schema.is(CounterCommand)({ _tag: "BogusCounter", counterId })).toBe(false);
+  expect(
+    Schema.is(ListCounters.errorSchema)(
+      EventStore.EventStorePersistenceFailure.make({ message: "failed" }),
+    ),
+  ).toBe(true);
   expect(() => Schema.decodeUnknownSync(CounterCommandReceipt)({})).toThrow();
-  expect(() => Schema.decodeUnknownSync(CounterList)({})).toThrow();
+  expect(() => Schema.decodeUnknownSync(ListCounters.successSchema)({})).toThrow();
   expect(CounterCommandClient.key).toBe("CounterCommandClient");
   expect(CounterQueryClient.key).toBe("CounterQueryClient");
 });
